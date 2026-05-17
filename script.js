@@ -656,38 +656,45 @@ document.addEventListener("keydown", e => {
 });
 
 // Tap-friendly reset: long-press the "Calcle" title (works on touch + mouse).
-// Guarded by a confirm() so a stray hold doesn't wipe state.
+// Fires the confirm() inside touchend/mouseup so iOS Safari sees it as a
+// user gesture (a setTimeout-deferred confirm() would be silently blocked).
 (() => {
   const title = document.querySelector("header h1");
   if (!title) return;
-  const HOLD_MS = 700;
-  let pressTimer = null;
-  let suppressClick = false;
+  const HOLD_MS = 600;
+  let pressStart = 0;
+  let cueTimer = null;
 
   const start = () => {
-    if (pressTimer) clearTimeout(pressTimer);
-    pressTimer = setTimeout(() => {
-      pressTimer = null;
-      suppressClick = true;
-      if (confirm("Reset today's puzzle? You'll get a fresh random one.")) {
-        devReset();
-      }
-    }, HOLD_MS);
+    pressStart = Date.now();
+    if (cueTimer) clearTimeout(cueTimer);
+    cueTimer = setTimeout(() => { title.style.opacity = "0.55"; }, HOLD_MS);
+  };
+  const end = () => {
+    if (cueTimer) { clearTimeout(cueTimer); cueTimer = null; }
+    title.style.opacity = "";
+    if (!pressStart) return;
+    const held = Date.now() - pressStart;
+    pressStart = 0;
+    if (held < HOLD_MS) return;
+    if (confirm("Reset today's puzzle? You'll get a fresh random one.")) {
+      devReset();
+    }
   };
   const cancel = () => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if (cueTimer) { clearTimeout(cueTimer); cueTimer = null; }
+    title.style.opacity = "";
+    pressStart = 0;
   };
 
   title.addEventListener("touchstart", start, { passive: true });
-  title.addEventListener("touchend", cancel);
+  title.addEventListener("touchend", end);
   title.addEventListener("touchcancel", cancel);
   title.addEventListener("touchmove", cancel, { passive: true });
   title.addEventListener("mousedown", start);
-  title.addEventListener("mouseup", cancel);
+  title.addEventListener("mouseup", end);
   title.addEventListener("mouseleave", cancel);
-  title.addEventListener("contextmenu", e => {
-    if (suppressClick) { e.preventDefault(); suppressClick = false; }
-  });
+  title.addEventListener("contextmenu", e => e.preventDefault());
 })();
 
 newPuzzle();
