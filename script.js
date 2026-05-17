@@ -655,45 +655,28 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// Tap-friendly reset: long-press the "Calcle" title (works on touch + mouse).
-// Fires the confirm() inside touchend/mouseup so iOS Safari sees it as a
-// user gesture (a setTimeout-deferred confirm() would be silently blocked).
+// Tap-friendly reset: triple-tap the "Calcle" title within 1.5s.
+// Long-press was unreliable on iOS Safari (text selection magnifier still
+// appears even with -webkit-touch-callout/user-select disabled). Quick
+// successive taps don't trigger any native gesture, and the third tap
+// fires confirm() inside an active user gesture.
 (() => {
   const title = document.querySelector("header h1");
   if (!title) return;
-  const HOLD_MS = 600;
-  let pressStart = 0;
-  let cueTimer = null;
+  const WINDOW_MS = 1500;
+  const REQUIRED = 3;
+  let taps = [];
 
-  const start = () => {
-    pressStart = Date.now();
-    if (cueTimer) clearTimeout(cueTimer);
-    cueTimer = setTimeout(() => { title.style.opacity = "0.55"; }, HOLD_MS);
-  };
-  const end = () => {
-    if (cueTimer) { clearTimeout(cueTimer); cueTimer = null; }
-    title.style.opacity = "";
-    if (!pressStart) return;
-    const held = Date.now() - pressStart;
-    pressStart = 0;
-    if (held < HOLD_MS) return;
+  title.addEventListener("click", () => {
+    const now = Date.now();
+    taps = taps.filter(t => now - t < WINDOW_MS);
+    taps.push(now);
+    if (taps.length < REQUIRED) return;
+    taps = [];
     if (confirm("Reset today's puzzle? You'll get a fresh random one.")) {
       devReset();
     }
-  };
-  const cancel = () => {
-    if (cueTimer) { clearTimeout(cueTimer); cueTimer = null; }
-    title.style.opacity = "";
-    pressStart = 0;
-  };
-
-  title.addEventListener("touchstart", start, { passive: true });
-  title.addEventListener("touchend", end);
-  title.addEventListener("touchcancel", cancel);
-  title.addEventListener("touchmove", cancel, { passive: true });
-  title.addEventListener("mousedown", start);
-  title.addEventListener("mouseup", end);
-  title.addEventListener("mouseleave", cancel);
+  });
   title.addEventListener("contextmenu", e => e.preventDefault());
 })();
 
