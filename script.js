@@ -688,8 +688,7 @@ function buildShareText() {
     : `${pts}/10 (off by ${dist}, ${secs}s)`;
   const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : pts === 5 ? "🟧" : "⬛";
   const cells = 10;
-  const filled = Math.min(cells, Math.max(1, Math.round((secs / 60) * cells)));
-  const bar = filledGlyph.repeat(filled) + "⬜".repeat(cells - filled);
+  const bar = filledGlyph.repeat(pts) + "⬜".repeat(cells - pts);
   return `Calcle ${date} — ${headline}\n${bar}`;
 }
 
