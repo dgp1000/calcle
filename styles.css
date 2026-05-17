@@ -11,6 +11,7 @@
   --accent: #4f8cff;
   --accent-hover: #6ba0ff;
   --danger: #c0392b;
+  --orange: #d27537;
 }
 
 * { box-sizing: border-box; }
@@ -32,13 +33,32 @@ header {
 
 header h1 {
   margin: 0;
-  font-size: 1.75rem;
-  letter-spacing: 0.05em;
+  font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  background: linear-gradient(
+    100deg,
+    var(--green) 0%,
+    var(--yellow) 35%,
+    var(--orange) 65%,
+    var(--accent) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  transition: filter 0.2s, transform 0.08s;
+}
+header h1:active {
+  transform: scale(0.98);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
 }
 
 .tagline {
@@ -437,5 +457,5 @@ main {
 @media (max-width: 420px) {
   .tile { font-size: 1.1rem; }
   .target-number, .current-number { font-size: 2.4rem; }
-  header h1 { font-size: 1.4rem; }
+  header h1 { font-size: 2.1rem; letter-spacing: 0.1em; }
 }
