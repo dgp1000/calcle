@@ -384,6 +384,15 @@ main {
 .solution .lbl { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.2rem; }
 .solution .expr { color: var(--text); }
 
+.share-bar {
+  font-size: 1.6rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  margin: 0.75rem 0 0.25rem;
+  text-align: center;
+}
+.share-bar:empty { display: none; }
+
 .share-legend {
   margin-top: 0.6rem;
   text-align: left;
