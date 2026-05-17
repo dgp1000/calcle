@@ -123,6 +123,8 @@ const endStats        = document.getElementById("endStats");
 const lockedStats     = document.getElementById("lockedStats");
 const newGameBtn      = document.getElementById("newGameBtn");
 const shareBtn        = document.getElementById("shareBtn");
+const endShareBar     = document.getElementById("endShareBar");
+const lockedShareBar  = document.getElementById("lockedShareBar");
 const opButtons       = Array.from(document.querySelectorAll(".op-btn"));
 
 // Build the 60-cell timer bar once.
@@ -220,6 +222,7 @@ function showLockedInline() {
     lockedSummary.textContent = "";
   }
   renderSolution(lockedSolution, r);
+  renderShareBars();
   renderStats(lockedStats);
   startCountdownTicker();
 }
@@ -339,6 +342,7 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
   endTitle.textContent = title;
   endMessage.textContent = message + "\n\nCome back tomorrow to play again.";
   renderSolution(endSolution, state.result);
+  renderShareBars();
   endModal.hidden = false;
 
   // Update stats. Streak still tracks exact hits only; totalPoints accumulates partial credit.
@@ -674,11 +678,22 @@ function stripOuterParens(e) {
 }
 
 // --- Share ---
+function buildShareBar() {
+  const r = state && state.result;
+  const pts = !r ? 0
+            : r.points != null ? r.points
+            : r.distance != null ? pointsFor(r.distance)
+            : 0;
+  const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : pts === 5 ? "🟧" : "⬛";
+  return filledGlyph.repeat(pts) + "⬜".repeat(10 - pts);
+}
+
 function buildShareText() {
   const r = state && state.result;
   const date = todayKey();
+  const bar = buildShareBar();
   if (!r || r.kind === "noanswer") {
-    return `Calcle ${date} — 0/10 (no answer)\n` + "⬜".repeat(10);
+    return `Calcle ${date} — 0/10 (no answer)\n${bar}`;
   }
   const dist = r.distance;
   const pts = pointsFor(dist);
@@ -686,10 +701,13 @@ function buildShareText() {
   const headline = dist === 0
     ? `${pts}/10 🎯 in ${secs}s`
     : `${pts}/10 (off by ${dist}, ${secs}s)`;
-  const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : pts === 5 ? "🟧" : "⬛";
-  const cells = 10;
-  const bar = filledGlyph.repeat(pts) + "⬜".repeat(cells - pts);
   return `Calcle ${date} — ${headline}\n${bar}`;
+}
+
+function renderShareBars() {
+  const bar = buildShareBar();
+  if (endShareBar) endShareBar.textContent = bar;
+  if (lockedShareBar) lockedShareBar.textContent = bar;
 }
 
 async function shareResult(btn) {
