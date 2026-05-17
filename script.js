@@ -684,7 +684,9 @@ function buildShareBar() {
             : r.points != null ? r.points
             : r.distance != null ? pointsFor(r.distance)
             : 0;
-  const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : pts === 5 ? "🟧" : "⬛";
+  // For 0 pts, show the full row as black so the band is still visible.
+  if (pts === 0) return "⬛".repeat(10);
+  const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : "🟧";
   return filledGlyph.repeat(pts) + "⬜".repeat(10 - pts);
 }
 
