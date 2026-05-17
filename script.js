@@ -695,18 +695,34 @@ function buildShareText() {
 
 async function shareResult(btn) {
   const text = buildShareText();
+  const url = location.href.split("?")[0].split("#")[0];
+
+  // Native share sheet (iOS, Android, modern desktop) — lets the user pick
+  // Messages / WhatsApp / Mail / etc.
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Calcle", text, url });
+      return;
+    } catch (err) {
+      // User dismissed the sheet — bail quietly.
+      if (err && err.name === "AbortError") return;
+      // Any other error: fall through to clipboard.
+    }
+  }
+
+  // Clipboard fallback (desktop Firefox, anything without Web Share).
+  const clipText = `${text}\n${url}`;
   let ok = false;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(clipText);
       ok = true;
     }
   } catch (_) { /* fall through */ }
   if (!ok) {
-    // Fallback: select-and-copy via a hidden textarea.
     try {
       const ta = document.createElement("textarea");
-      ta.value = text;
+      ta.value = clipText;
       ta.style.position = "fixed";
       ta.style.opacity = "0";
       document.body.appendChild(ta);
