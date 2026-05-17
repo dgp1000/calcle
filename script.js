@@ -678,7 +678,7 @@ function buildShareText() {
   const r = state && state.result;
   const date = todayKey();
   if (!r || r.kind === "noanswer") {
-    return `Calcle ${date} — 0/10 (no answer)\n` + "⬜".repeat(20);
+    return `Calcle ${date} — 0/10 (no answer)\n` + "⬜".repeat(10);
   }
   const dist = r.distance;
   const pts = pointsFor(dist);
@@ -687,7 +687,7 @@ function buildShareText() {
     ? `${pts}/10 🎯 in ${secs}s`
     : `${pts}/10 (off by ${dist}, ${secs}s)`;
   const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : pts === 5 ? "🟧" : "⬛";
-  const cells = 20;
+  const cells = 10;
   const filled = Math.min(cells, Math.max(1, Math.round((secs / 60) * cells)));
   const bar = filledGlyph.repeat(filled) + "⬜".repeat(cells - filled);
   return `Calcle ${date} — ${headline}\n${bar}`;
