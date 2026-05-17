@@ -384,6 +384,47 @@ main {
 .solution .lbl { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.2rem; }
 .solution .expr { color: var(--text); }
 
+.share-legend {
+  margin-top: 0.6rem;
+  text-align: left;
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.share-legend summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+}
+.share-legend summary::-webkit-details-marker { display: none; }
+.share-legend summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  color: var(--text-dim);
+}
+.share-legend[open] summary::before { content: "▾"; }
+.share-legend ul {
+  margin: 0.5rem 0 0.25rem;
+  padding-left: 0;
+  list-style: none;
+}
+.share-legend li {
+  padding: 0.15rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.share-legend .sq { font-size: 1rem; line-height: 1; }
+.share-legend .legend-foot {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
 @media (max-width: 420px) {
   .tile { font-size: 1.1rem; }
   .target-number, .current-number { font-size: 2.4rem; }
