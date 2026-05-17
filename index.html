@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calcle</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Calcle</h1>
+    <p class="tagline">Hit the target in 60 seconds or less.</p>
+  </header>
+
+  <main>
+    <section class="top-row">
+      <div class="target-area">
+        <div class="target-label">Target</div>
+        <div class="target-number" id="target">—</div>
+      </div>
+      <div class="timer-area">
+        <div class="timer-label">Time</div>
+        <div class="timer" id="timer">60</div>
+      </div>
+    </section>
+
+    <div class="start-area" id="startArea">
+      <button id="startBtn" class="primary big" type="button">Start 60-second round</button>
+      <div id="lockedNotice" class="locked-notice" hidden>
+        <strong>Todays puzzle has been completed.</strong>
+        <p id="lockedSummary"></p>
+        <div class="stats" id="lockedStats"></div>
+        <p class="hint">Next puzzle in <span id="lockedCountdown">…</span> (your local midnight)</p>
+      </div>
+    </div>
+
+    <section class="board">
+      <div class="numbers-row" id="numbersRow"></div>
+
+      <div class="builder">
+        <input
+          id="exprInput"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Type or click to build an expression…"
+        />
+        <div class="builder-hint" id="builderHint">Use the tiles, ops, and parenthesis — or just type.</div>
+      </div>
+
+      <div class="operators">
+        <button class="op-btn" data-op="+" type="button">+</button>
+        <button class="op-btn" data-op="−" type="button">−</button>
+        <button class="op-btn" data-op="×" type="button">×</button>
+        <button class="op-btn" data-op="÷" type="button">÷</button>
+        <button class="op-btn" data-op="(" type="button">(</button>
+        <button class="op-btn" data-op=")" type="button">)</button>
+      </div>
+
+      <div class="controls">
+        <button id="backspaceBtn" type="button">⌫</button>
+        <button id="resetBtn" type="button">Clear</button>
+        <button id="submitBtn" class="primary" type="button">Submit guess</button>
+      </div>
+    </section>
+
+    <div class="status" id="status" aria-live="polite"></div>
+  </main>
+
+  <div class="modal" id="endModal" hidden>
+    <div class="modal-content">
+      <h2 id="endTitle">Game over</h2>
+      <p id="endMessage"></p>
+      <div class="stats" id="endStats"></div>
+      <button id="newGameBtn" class="primary" type="button">Close</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
