@@ -98,19 +98,19 @@ main {
   gap: 0.25rem;
 }
 .timer-bar {
-  display: grid;
-  grid-template-columns: repeat(60, 1fr);
+  display: flex;
   gap: 2px;
-  height: 14px;
+  height: 18px;
   border-radius: 4px;
   padding: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
 }
 .timer-bar .cell {
+  flex: 1 1 0;
+  min-width: 0;
   background: var(--gray);
   border-radius: 1px;
-  min-width: 0;
   transition: background 0.15s;
 }
 .timer-bar .cell.on        { background: var(--green); }
