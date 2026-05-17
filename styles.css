@@ -35,6 +35,10 @@ header h1 {
   font-size: 1.75rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .tagline {

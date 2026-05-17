@@ -643,12 +643,51 @@ exprInput.addEventListener("keydown", e => {
 
 // Dev reset: Cmd+Option+S (Mac) / Ctrl+Alt+S (others) clears the daily lock
 // AND re-rolls with a random seed so you get a fresh puzzle each time.
+function devReset() {
+  localStorage.removeItem(STORAGE_KEY);
+  newPuzzle({ devRandom: true });
+}
+
 document.addEventListener("keydown", e => {
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === "KeyS") {
     e.preventDefault();
-    localStorage.removeItem(STORAGE_KEY);
-    newPuzzle({ devRandom: true });
+    devReset();
   }
 });
+
+// Tap-friendly reset: long-press the "Calcle" title (works on touch + mouse).
+// Guarded by a confirm() so a stray hold doesn't wipe state.
+(() => {
+  const title = document.querySelector("header h1");
+  if (!title) return;
+  const HOLD_MS = 700;
+  let pressTimer = null;
+  let suppressClick = false;
+
+  const start = () => {
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      suppressClick = true;
+      if (confirm("Reset today's puzzle? You'll get a fresh random one.")) {
+        devReset();
+      }
+    }, HOLD_MS);
+  };
+  const cancel = () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  };
+
+  title.addEventListener("touchstart", start, { passive: true });
+  title.addEventListener("touchend", cancel);
+  title.addEventListener("touchcancel", cancel);
+  title.addEventListener("touchmove", cancel, { passive: true });
+  title.addEventListener("mousedown", start);
+  title.addEventListener("mouseup", cancel);
+  title.addEventListener("mouseleave", cancel);
+  title.addEventListener("contextmenu", e => {
+    if (suppressClick) { e.preventDefault(); suppressClick = false; }
+  });
+})();
 
 newPuzzle();
