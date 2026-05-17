@@ -18,18 +18,27 @@
         <div class="target-label">Target</div>
         <div class="target-number" id="target">—</div>
       </div>
-      <div class="timer-area">
-        <div class="timer-label">Time</div>
-        <div class="timer" id="timer">60</div>
+      <div class="current-area">
+        <div class="current-label">Yours</div>
+        <div class="current-number" id="current">—</div>
       </div>
+    </section>
+
+    <section class="timer-section" aria-label="Time remaining">
+      <div class="timer-bar" id="timerBar" role="timer" aria-live="off"></div>
+      <div class="timer-readout"><span id="timerReadout">60</span>s left</div>
     </section>
 
     <div class="start-area" id="startArea">
       <button id="startBtn" class="primary big" type="button">Start 60-second round</button>
       <div id="lockedNotice" class="locked-notice" hidden>
-        <strong>Todays puzzle has been completed.</strong>
+        <strong>Today's puzzle has been completed.</strong>
         <p id="lockedSummary"></p>
+        <p id="lockedSolution" class="solution"></p>
         <div class="stats" id="lockedStats"></div>
+        <div class="modal-buttons">
+          <button id="lockedShareBtn" class="primary" type="button">Share</button>
+        </div>
         <p class="hint">Next puzzle in <span id="lockedCountdown">…</span> (your local midnight)</p>
       </div>
     </div>
@@ -73,8 +82,12 @@
     <div class="modal-content">
       <h2 id="endTitle">Game over</h2>
       <p id="endMessage"></p>
+      <p id="endSolution" class="solution"></p>
       <div class="stats" id="endStats"></div>
-      <button id="newGameBtn" class="primary" type="button">Close</button>
+      <div class="modal-buttons">
+        <button id="shareBtn" class="primary" type="button">Share</button>
+        <button id="newGameBtn" type="button">Close</button>
+      </div>
     </div>
   </div>
 

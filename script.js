@@ -53,7 +53,16 @@ function mulberry32(seed) {
 }
 
 function defaultStats() {
-  return { currentStreak: 0, maxStreak: 0, streakLastDay: null, gamesPlayed: 0, wins: 0 };
+  return { currentStreak: 0, maxStreak: 0, streakLastDay: null, gamesPlayed: 0, wins: 0, totalPoints: 0 };
+}
+
+// Countdown-style scoring: 10 exact, 7 within 5, 5 within 10, else 0.
+function pointsFor(distance) {
+  if (distance == null) return 0;
+  if (distance === 0) return 10;
+  if (distance <= 5)  return 7;
+  if (distance <= 10) return 5;
+  return 0;
 }
 
 function loadStored() {
@@ -69,6 +78,7 @@ function loadStored() {
       };
     }
     if (!data.stats) data.stats = defaultStats();
+    if (data.stats.totalPoints == null) data.stats.totalPoints = 0;
     return data;
   } catch (_) { return null; }
 }
@@ -89,11 +99,15 @@ let rng = Math.random;
 
 // --- DOM ---
 const targetEl        = document.getElementById("target");
-const timerEl         = document.getElementById("timer");
+const currentEl       = document.getElementById("current");
+const timerBar        = document.getElementById("timerBar");
+const timerReadout    = document.getElementById("timerReadout");
 const startArea       = document.getElementById("startArea");
 const startBtn        = document.getElementById("startBtn");
 const lockedNotice    = document.getElementById("lockedNotice");
 const lockedSummary   = document.getElementById("lockedSummary");
+const lockedSolution  = document.getElementById("lockedSolution");
+const lockedShareBtn  = document.getElementById("lockedShareBtn");
 const lockedCountdown = document.getElementById("lockedCountdown");
 const numbersRow      = document.getElementById("numbersRow");
 const exprInput       = document.getElementById("exprInput");
@@ -104,10 +118,22 @@ const submitBtn       = document.getElementById("submitBtn");
 const endModal        = document.getElementById("endModal");
 const endTitle        = document.getElementById("endTitle");
 const endMessage      = document.getElementById("endMessage");
+const endSolution     = document.getElementById("endSolution");
 const endStats        = document.getElementById("endStats");
 const lockedStats     = document.getElementById("lockedStats");
 const newGameBtn      = document.getElementById("newGameBtn");
+const shareBtn        = document.getElementById("shareBtn");
 const opButtons       = Array.from(document.querySelectorAll(".op-btn"));
+
+// Build the 60-cell timer bar once.
+const TIMER_CELLS = 60;
+const timerCells = [];
+for (let i = 0; i < TIMER_CELLS; i++) {
+  const c = document.createElement("div");
+  c.className = "cell";
+  timerBar.appendChild(c);
+  timerCells.push(c);
+}
 
 // --- State ---
 let state;
@@ -179,8 +205,9 @@ function showLockedInline() {
   lockedNotice.hidden = false;
   const r = state.result;
   if (r && r.kind === "noanswer") {
-    lockedSummary.textContent = "You didn't submit a valid answer.";
+    lockedSummary.textContent = "You didn't submit a valid answer. (0/10)";
   } else if (r && r.distance != null) {
+    const pts = r.points != null ? r.points : pointsFor(r.distance);
     let off;
     if (r.distance === 0) {
       const secs = r.timeUsedMs ? Math.max(1, Math.round(r.timeUsedMs / 1000)) : null;
@@ -188,10 +215,11 @@ function showLockedInline() {
     } else {
       off = `off by ${r.distance}`;
     }
-    lockedSummary.textContent = `Your answer: ${r.exprText} = ${r.result} (${off})`;
+    lockedSummary.textContent = `${pts}/10 — ${r.exprText} = ${r.result} (${off})`;
   } else {
     lockedSummary.textContent = "";
   }
+  renderSolution(lockedSolution, r);
   renderStats(lockedStats);
   startCountdownTicker();
 }
@@ -274,17 +302,19 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
   let title, message;
   state.phase = "locked";
 
+  let points = 0;
   if (result === null) {
-    state.result = { kind: "noanswer" };
+    state.result = { kind: "noanswer", points: 0, timeUsedMs };
     title = "Time's up";
     message = parseError
       ? `No valid answer (${parseError})`
       : "You didn't submit an expression.";
   } else {
     const distance = Math.abs(result - state.target);
-    state.result = { exprText, result, distance, byTimeout, timeUsedMs };
+    points = pointsFor(distance);
+    state.result = { exprText, result, distance, byTimeout, timeUsedMs, points };
+    const secs = Math.max(1, Math.round(timeUsedMs / 1000));
     if (distance === 0) {
-      const secs = Math.max(1, Math.round(timeUsedMs / 1000));
       const praise = byTimeout
         ? "Just in time"
         : secs <= 10 ? "Lightning fast"
@@ -292,29 +322,33 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
         : secs <= 45 ? "Nice one"
         : "You got there";
       title = `${praise}! 🎯`;
-      message = `Solved in ${secs}s.\n${exprText} = ${result}`;
-    } else if (distance <= 2) {
-      title = byTimeout ? "Time's up — almost!" : "Almost!";
-      message = `${exprText} = ${result} (off by ${distance})`;
+      message = `${points}/10 — solved in ${secs}s.\n${exprText} = ${result}`;
     } else if (distance <= 5) {
       title = byTimeout ? "Time's up — so close!" : "So close!";
-      message = `${exprText} = ${result} (off by ${distance})`;
+      message = `${points}/10 — ${exprText} = ${result} (off by ${distance})`;
     } else {
       title = byTimeout ? "Time's up" : "Submitted";
-      message = `${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
+      message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
     }
+  }
+  // Compute solution once for non-exact rounds; cache on state.result.
+  if (!state.result || state.result.distance !== 0) {
+    const sol = solve(state.pool, state.target);
+    if (sol && sol.distance === 0) state.result.solutionExpr = sol.expr;
   }
   endTitle.textContent = title;
   endMessage.textContent = message + "\n\nCome back tomorrow to play again.";
+  renderSolution(endSolution, state.result);
   endModal.hidden = false;
 
-  // Update stats based on whether this run was an exact hit.
+  // Update stats. Streak still tracks exact hits only; totalPoints accumulates partial credit.
   const today = todayKey();
   const won = !!(state.result && state.result.distance === 0);
   const prev = state.stats || defaultStats();
   const newStats = {
     gamesPlayed: prev.gamesPlayed + 1,
     wins: prev.wins + (won ? 1 : 0),
+    totalPoints: (prev.totalPoints || 0) + points,
     currentStreak: won
       ? (prev.streakLastDay === yesterdayKey(today) ? prev.currentStreak + 1 : 1)
       : 0,
@@ -333,16 +367,38 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
   render();
 }
 
+function renderSolution(container, result) {
+  if (!container) return;
+  // Show solution for any non-exact result (including no-answer). Hide on exact wins.
+  if (!result || result.distance === 0) {
+    container.innerHTML = "";
+    return;
+  }
+  let expr = result.solutionExpr;
+  if (!expr) {
+    const sol = solve(state.pool, state.target);
+    if (sol && sol.distance === 0) {
+      expr = sol.expr;
+      result.solutionExpr = expr;
+    }
+  }
+  if (expr) {
+    container.innerHTML = `<span class="lbl">A possible solution</span><span class="expr">${expr} = ${state.target}</span>`;
+  } else {
+    container.innerHTML = `<span class="lbl">No exact solution exists for this puzzle.</span>`;
+  }
+}
+
 function renderStats(container) {
   if (!container) return;
   const s = state.stats || defaultStats();
-  const winPct = s.gamesPlayed ? Math.round((s.wins / s.gamesPlayed) * 100) : 0;
+  const avg = s.gamesPlayed ? ((s.totalPoints || 0) / s.gamesPlayed).toFixed(1) : "0";
   container.innerHTML = "";
   const cells = [
     { num: s.currentStreak, lbl: "Streak", streak: true },
     { num: s.maxStreak,     lbl: "Best",   streak: true },
     { num: s.gamesPlayed,   lbl: "Played" },
-    { num: `${winPct}%`,    lbl: "Win %"  },
+    { num: avg,             lbl: "Avg pts" },
   ];
   for (const c of cells) {
     const cell = document.createElement("div");
@@ -550,18 +606,166 @@ function parseAndEvaluate(input) {
   return result;
 }
 
+// --- Solver: bitmask DP over tile subsets. ---
+// Returns { value, expr, distance } for the closest reachable value (exact if possible).
+function solve(pool, target) {
+  const n = pool.length;
+  const sets = new Array(1 << n);
+  for (let i = 0; i < n; i++) {
+    const m = new Map();
+    m.set(pool[i], String(pool[i]));
+    sets[1 << i] = m;
+  }
+  let best = { value: pool[0], expr: String(pool[0]), distance: Math.abs(pool[0] - target) };
+  const consider = (v, e) => {
+    const d = Math.abs(v - target);
+    if (d < best.distance) best = { value: v, expr: e, distance: d };
+  };
+  for (const v of pool) consider(v, String(v));
+
+  const popcount = x => { let c = 0; while (x) { c += x & 1; x >>>= 1; } return c; };
+  const subsets = [];
+  for (let s = 1; s < (1 << n); s++) if (popcount(s) >= 2) subsets.push(s);
+  subsets.sort((a, b) => popcount(a) - popcount(b));
+
+  const tryCombo = (m, r, e) => {
+    if (!m.has(r)) m.set(r, e);
+    consider(r, e);
+  };
+
+  for (const s of subsets) {
+    const m = new Map();
+    // Iterate non-empty proper subsets of s; each unordered partition appears twice (a, s\a) and (s\a, a),
+    // which is fine — duplicate work is bounded and Map dedupes results.
+    for (let a = (s - 1) & s; a > 0; a = (a - 1) & s) {
+      const b = s ^ a;
+      const ma = sets[a];
+      const mb = sets[b];
+      if (!ma || !mb) continue;
+      for (const [va, ea] of ma) {
+        for (const [vb, eb] of mb) {
+          tryCombo(m, va + vb, `(${ea} + ${eb})`);
+          tryCombo(m, va * vb, `(${ea} × ${eb})`);
+          if (va > vb) tryCombo(m, va - vb, `(${ea} − ${eb})`);
+          else if (vb > va) tryCombo(m, vb - va, `(${eb} − ${ea})`);
+          if (vb !== 0 && va % vb === 0 && va !== 0)
+            tryCombo(m, va / vb, `(${ea} ÷ ${eb})`);
+          if (va !== 0 && vb % va === 0 && vb !== 0)
+            tryCombo(m, vb / va, `(${eb} ÷ ${ea})`);
+        }
+      }
+    }
+    sets[s] = m;
+    if (best.distance === 0) break;
+  }
+  best.expr = stripOuterParens(best.expr);
+  return best;
+}
+
+function stripOuterParens(e) {
+  if (!(e.startsWith("(") && e.endsWith(")"))) return e;
+  let depth = 0;
+  for (let i = 0; i < e.length - 1; i++) {
+    if (e[i] === "(") depth++;
+    else if (e[i] === ")") depth--;
+    if (depth === 0) return e;
+  }
+  return e.slice(1, -1);
+}
+
+// --- Share ---
+function buildShareText() {
+  const r = state && state.result;
+  const date = todayKey();
+  if (!r || r.kind === "noanswer") {
+    return `Calcle ${date} — 0/10 (no answer)\n` + "⬜".repeat(20);
+  }
+  const dist = r.distance;
+  const pts = pointsFor(dist);
+  const secs = r.timeUsedMs != null ? Math.max(1, Math.round(r.timeUsedMs / 1000)) : 60;
+  const headline = dist === 0
+    ? `${pts}/10 🎯 in ${secs}s`
+    : `${pts}/10 (off by ${dist}, ${secs}s)`;
+  const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : pts === 5 ? "🟧" : "⬛";
+  const cells = 20;
+  const filled = Math.min(cells, Math.max(1, Math.round((secs / 60) * cells)));
+  const bar = filledGlyph.repeat(filled) + "⬜".repeat(cells - filled);
+  return `Calcle ${date} — ${headline}\n${bar}`;
+}
+
+async function shareResult(btn) {
+  const text = buildShareText();
+  let ok = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    }
+  } catch (_) { /* fall through */ }
+  if (!ok) {
+    // Fallback: select-and-copy via a hidden textarea.
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      ok = document.execCommand && document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch (_) { ok = false; }
+  }
+  if (btn) {
+    const original = btn.textContent;
+    btn.textContent = ok ? "Copied!" : "Copy failed";
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  }
+}
+
 // --- Rendering ---
 function render() {
   targetEl.textContent = String(state.target);
   renderTiles();
   renderControls();
+  renderCurrent();
 }
 
 function renderTimer(ms) {
-  const secs = Math.ceil(ms / 1000);
-  timerEl.textContent = String(secs);
-  timerEl.classList.toggle("danger", ms <= DANGER_AT_MS && state.phase === "running");
-  timerEl.classList.toggle("warn", ms <= WARN_AT_MS && ms > DANGER_AT_MS && state.phase === "running");
+  const running = state && state.phase === "running";
+  const idle = state && state.phase === "idle";
+  // On idle (pre-round) show a full green bar; once the round ends/locks, show the bar empty.
+  const showSecs = running ? Math.max(0, Math.ceil(ms / 1000))
+                 : idle    ? TIMER_CELLS
+                 :           0;
+  timerReadout.textContent = String(running ? showSecs : (idle ? TIMER_CELLS : 0));
+  const danger = running && ms <= DANGER_AT_MS;
+  const warn = running && ms <= WARN_AT_MS && ms > DANGER_AT_MS;
+  timerBar.classList.toggle("danger", danger);
+  for (let i = 0; i < TIMER_CELLS; i++) {
+    const on = i < showSecs;
+    const cell = timerCells[i];
+    cell.classList.toggle("on", on);
+    cell.classList.toggle("warn", on && warn);
+    cell.classList.toggle("danger", on && danger);
+  }
+}
+
+function renderCurrent() {
+  if (!state || state.phase !== "running" || !state.expression.trim()) {
+    currentEl.textContent = "—";
+    currentEl.classList.remove("has-value", "match");
+    return;
+  }
+  let value;
+  try { value = parseAndEvaluate(state.expression); }
+  catch (_) {
+    currentEl.textContent = "—";
+    currentEl.classList.remove("has-value", "match");
+    return;
+  }
+  currentEl.textContent = String(value);
+  currentEl.classList.add("has-value");
+  currentEl.classList.toggle("match", value === state.target);
 }
 
 function renderTiles() {
@@ -625,6 +829,8 @@ backspaceBtn.addEventListener("click", backspace);
 resetBtn.addEventListener("click", clearExpression);
 submitBtn.addEventListener("click", submitGuess);
 newGameBtn.addEventListener("click", () => { endModal.hidden = true; });
+shareBtn.addEventListener("click", () => shareResult(shareBtn));
+lockedShareBtn.addEventListener("click", () => shareResult(lockedShareBtn));
 endModal.addEventListener("click", e => {
   if (e.target === endModal) endModal.hidden = true;
 });
