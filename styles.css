@@ -63,12 +63,12 @@ main {
   align-items: center;
 }
 
-.target-area, .timer-area {
+.target-area, .current-area {
   text-align: center;
 }
 
 .target-label,
-.timer-label,
+.current-label,
 .guesses-label {
   font-size: 0.75rem;
   color: var(--text-dim);
@@ -78,21 +78,56 @@ main {
 }
 
 .target-number,
-.timer {
+.current-number {
   font-size: 3rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  transition: color 0.15s;
 }
 
 .target-number { color: var(--accent); }
-.timer { color: var(--text); transition: color 0.2s; }
-.timer.warn   { color: var(--yellow); }
-.timer.danger { color: #ff5e5e; animation: pulse 0.8s ease-in-out infinite; }
+.current-number { color: var(--text-dim); }
+.current-number.has-value { color: var(--text); }
+.current-number.match     { color: var(--green); }
+
+/* Timer bar */
+.timer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.timer-bar {
+  display: grid;
+  grid-template-columns: repeat(60, 1fr);
+  gap: 2px;
+  height: 14px;
+  border-radius: 4px;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.timer-bar .cell {
+  background: var(--gray);
+  border-radius: 1px;
+  min-width: 0;
+  transition: background 0.15s;
+}
+.timer-bar .cell.on        { background: var(--green); }
+.timer-bar .cell.on.warn   { background: var(--yellow); }
+.timer-bar .cell.on.danger { background: #ff5e5e; }
+.timer-bar.danger          { animation: pulse 0.8s ease-in-out infinite; }
+.timer-readout {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
 
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.06); }
+  50%      { transform: scale(1.02); }
 }
 
 .start-area { display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.5rem 0; }
@@ -324,10 +359,33 @@ main {
 }
 .modal-content h2 { margin-top: 0; }
 .modal-content p { white-space: pre-line; }
-.modal-content button { margin-top: 0.5rem; padding: 0.7rem 1.5rem; font-family: inherit; font-size: 1rem; }
+.modal-content button { padding: 0.7rem 1.5rem; font-family: inherit; font-size: 1rem; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: 600; }
+.modal-content button.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.modal-content button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.solution {
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  margin: 0.5rem 0;
+}
+.solution:empty { display: none; }
+.solution .lbl { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.2rem; }
+.solution .expr { color: var(--text); }
 
 @media (max-width: 420px) {
   .tile { font-size: 1.1rem; }
-  .target-number { font-size: 2.4rem; }
+  .target-number, .current-number { font-size: 2.4rem; }
   header h1 { font-size: 1.4rem; }
 }
