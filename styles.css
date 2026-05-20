@@ -33,6 +33,10 @@ header {
 
 header h1 {
   margin: 0;
+  display: inline-block;
+  padding: 0.35rem 1rem 0.45rem;
+  border: 2px solid #2f6b3a;
+  border-radius: 10px;
   font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 2.75rem;
   font-weight: 800;
