@@ -26,10 +26,33 @@ html, body {
 }
 
 header {
+  position: relative;
   text-align: center;
   padding: 1.25rem 1rem 0.5rem;
   border-bottom: 1px solid var(--border);
 }
+
+.help-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.help-btn:hover { color: var(--text); border-color: var(--accent); }
 
 header h1 {
   margin: 0;
@@ -445,6 +468,30 @@ main {
 .solution:empty { display: none; }
 .solution .lbl { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.2rem; }
 .solution .expr { color: var(--text); }
+
+.intro-list {
+  text-align: left;
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.intro-list li { margin-bottom: 0.4rem; }
+.intro-list strong { color: var(--text); }
+
+.intro-example {
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+.intro-example code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--text);
+}
 
 .share-bar {
   font-size: 1.6rem;

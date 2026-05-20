@@ -19,6 +19,7 @@ const OP_CHARS = "+−×÷";
 // --- Daily-puzzle plumbing ---
 const STORAGE_KEY = "crunch:state";
 const LEGACY_STORAGE_KEY = "calcle:state";
+const INTRO_SEEN_KEY = "crunch:seenIntro";
 // Migrate any pre-rename save once on load so existing streaks survive.
 try {
   if (!localStorage.getItem(STORAGE_KEY)) {
@@ -152,6 +153,9 @@ const newGameBtn      = document.getElementById("newGameBtn");
 const shareBtn        = document.getElementById("shareBtn");
 const endShareBar     = document.getElementById("endShareBar");
 const lockedShareBar  = document.getElementById("lockedShareBar");
+const introModal      = document.getElementById("introModal");
+const introCloseBtn   = document.getElementById("introCloseBtn");
+const helpBtn         = document.getElementById("helpBtn");
 const opButtons       = Array.from(document.querySelectorAll(".op-btn"));
 
 // Build the timer bar once. 60 cells regardless of round length — each cell
@@ -989,6 +993,18 @@ endModal.addEventListener("click", e => {
   if (e.target === endModal) endModal.hidden = true;
 });
 
+// --- First-run walkthrough ---
+function showIntro() { introModal.hidden = false; }
+function dismissIntro() {
+  introModal.hidden = true;
+  try { localStorage.setItem(INTRO_SEEN_KEY, "1"); } catch (_) { }
+}
+helpBtn.addEventListener("click", showIntro);
+introCloseBtn.addEventListener("click", dismissIntro);
+introModal.addEventListener("click", e => {
+  if (e.target === introModal) dismissIntro();
+});
+
 exprInput.addEventListener("input", e => {
   state.expression = e.target.value;
   setStatus("");
@@ -1061,3 +1077,7 @@ window.addEventListener("pageshow", e => {
 
 
 newPuzzle();
+
+try {
+  if (!localStorage.getItem(INTRO_SEEN_KEY)) showIntro();
+} catch (_) { }
