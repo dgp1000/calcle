@@ -175,21 +175,24 @@ main {
   width: 100%;
 }
 
-/* Start button — green to tie into the title gradient and timer bar,
-   letting the blue Submit guess own the "primary action" slot in-round. */
+/* Start button — outlined to twin the title's stamped look. Transparent
+   fill keeps the timer bar as the lone solid-green block, and the blue
+   Submit guess can own the "primary action" slot once a round is live. */
 #startBtn {
-  background: #538d4e;
-  border: 1px solid #2f6b3a;
-  color: #f5f5f5;
-  border-radius: 8px;
+  background: transparent;
+  border: 2px solid #2f6b3a;
+  color: #7ec070;
+  border-radius: 10px;
   font-family: inherit;
   font-weight: 700;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 #startBtn:hover:not(:disabled) {
-  background: #7ec070;
+  background: rgba(83, 141, 78, 0.12);
   border-color: #538d4e;
+  color: #b8e6a8;
 }
 #startBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
