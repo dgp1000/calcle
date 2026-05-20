@@ -175,6 +175,24 @@ main {
   width: 100%;
 }
 
+/* Start button — green to tie into the title gradient and timer bar,
+   letting the blue Submit guess own the "primary action" slot in-round. */
+#startBtn {
+  background: #538d4e;
+  border: 1px solid #2f6b3a;
+  color: #f5f5f5;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+#startBtn:hover:not(:disabled) {
+  background: #7ec070;
+  border-color: #538d4e;
+}
+#startBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Stats grid (streak / wins) */
 .stats {
   display: grid;
@@ -350,7 +368,7 @@ main {
 .controls button:hover:not(:disabled) { border-color: var(--accent); }
 .controls button.primary { background: var(--accent); border-color: var(--accent); color: white; }
 .controls button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
-.controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+.controls button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .status {
   text-align: center;
