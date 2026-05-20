@@ -351,12 +351,18 @@ main {
 .op-btn.selected { background: var(--accent); border-color: var(--accent); color: white; }
 .op-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Math operators in a pale blue-white so they quietly echo the accent
-   palette (target number, Submit) without competing. Parens stay white. */
+   palette (target number, Submit) without competing. */
 .op-btn[data-op="+"],
 .op-btn[data-op="−"],
 .op-btn[data-op="×"],
 .op-btn[data-op="÷"] {
   color: #dbe6ff;
+}
+/* Parentheses sit slightly darker with a hint of dusty rose — they're
+   structural punctuation, so they recede behind the operators and tiles. */
+.op-btn[data-op="("],
+.op-btn[data-op=")"] {
+  color: #c8a8a8;
 }
 
 /* Controls */
