@@ -137,9 +137,11 @@ main {
   border-radius: 1px;
   transition: background 0.15s;
 }
-.timer-bar .cell.on        { background: var(--green); }
-.timer-bar .cell.on.warn   { background: var(--yellow); }
-.timer-bar .cell.on.danger { background: #ff5e5e; }
+/* Positional gradient: each cell's hue is set inline (0 = red, 120 = green)
+   so the bar shows a smooth red→yellow→green sweep when full. The legacy
+   warn/danger per-cell overrides are no longer needed — running out of time
+   naturally exposes the red end of the bar. */
+.timer-bar .cell.on        { background: hsl(var(--cell-hue, 120), 55%, 45%); }
 .timer-bar.danger          { animation: pulse 0.8s ease-in-out infinite; }
 .timer-readout {
   text-align: center;

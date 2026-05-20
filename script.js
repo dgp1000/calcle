@@ -141,6 +141,11 @@ const timerCells = [];
 for (let i = 0; i < TIMER_CELLS; i++) {
   const c = document.createElement("div");
   c.className = "cell";
+  // Hue per cell: 0 (red) at the leftmost, 120 (green) at the rightmost.
+  // Cells deplete from the right, so the green end disappears first and red
+  // gets exposed as the round runs down.
+  const hue = (i / (TIMER_CELLS - 1)) * 120;
+  c.style.setProperty("--cell-hue", String(hue));
   timerBar.appendChild(c);
   timerCells.push(c);
 }
