@@ -1046,6 +1046,18 @@ document.addEventListener("keydown", e => {
   title.addEventListener("contextmenu", e => e.preventDefault());
 })();
 
+// Belt-and-braces double-tap-zoom suppression. iOS Safari ignores the
+// viewport maximum-scale + user-scalable directives in many cases, and
+// touch-action: manipulation only applies to the tap target itself. This
+// catches any second tap within 350ms anywhere on the page and stops the
+// browser from interpreting the pair as a zoom gesture.
+let _lastTouchEndMs = 0;
+document.addEventListener("touchend", e => {
+  const now = Date.now();
+  if (now - _lastTouchEndMs <= 350) e.preventDefault();
+  _lastTouchEndMs = now;
+}, { passive: false });
+
 // Safari bfcache repaint bug: restoring via back/forward sometimes leaves the
 // gradient-clipped CRUNCH text invisible (border stays, letters vanish).
 // Force a reflow on persisted pageshow so the gradient gets re-rasterised.
