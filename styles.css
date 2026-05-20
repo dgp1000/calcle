@@ -351,6 +351,14 @@ main {
 .op-btn:active:not(:disabled) { transform: scale(0.96); }
 .op-btn.selected { background: var(--accent); border-color: var(--accent); color: white; }
 .op-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Math operators in a pale blue-white so they quietly echo the accent
+   palette (target number, Submit) without competing. Parens stay white. */
+.op-btn[data-op="+"],
+.op-btn[data-op="−"],
+.op-btn[data-op="×"],
+.op-btn[data-op="÷"] {
+  color: #dbe6ff;
+}
 
 /* Controls */
 .controls {
