@@ -324,7 +324,6 @@ function startRound() {
   setStatus("");
   scheduleTick();
   render();
-  exprInput.focus();
 }
 
 function scheduleTick() {
@@ -1005,24 +1004,8 @@ introModal.addEventListener("click", e => {
   if (e.target === introModal) dismissIntro();
 });
 
-exprInput.addEventListener("input", e => {
-  state.expression = e.target.value;
-  setStatus("");
-  if (state.phase === "running") {
-    persistActiveRound({
-      date: todayKey(),
-      startTimeMs: state.startTimeMs,
-      expression: e.target.value,
-    });
-  }
-  render();
-});
-exprInput.addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    submitGuess();
-  }
-});
+// Expression field is display-only — all input flows through tile/op
+// buttons, which call setExpression() and persist the round there.
 
 // Dev reset: Cmd+Option+S (Mac) / Ctrl+Alt+S (others) clears the daily lock
 // AND re-rolls with a random seed so you get a fresh puzzle each time.

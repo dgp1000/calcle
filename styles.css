@@ -23,6 +23,8 @@ html, body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   min-height: 100vh;
+  /* Suppress iOS double-tap-to-zoom while keeping pinch-zoom available. */
+  touch-action: manipulation;
 }
 
 header {
@@ -347,9 +349,10 @@ main {
   padding: 0.6rem 0.75rem;
   border-radius: 6px;
   outline: none;
-  transition: border-color 0.1s;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
-#exprInput:focus { border-color: var(--accent); }
 #exprInput::placeholder { color: var(--text-dim); }
 
 .builder-hint {
