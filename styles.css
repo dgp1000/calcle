@@ -44,10 +44,10 @@ header h1 {
   -webkit-touch-callout: none;
   background: linear-gradient(
     100deg,
-    var(--green) 0%,
-    var(--yellow) 35%,
-    var(--orange) 65%,
-    var(--accent) 100%
+    #2f6b3a 0%,
+    #538d4e 35%,
+    #7ec070 65%,
+    #b8e6a8 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
