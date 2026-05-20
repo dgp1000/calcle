@@ -351,7 +351,7 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
     state.result = { kind: "noanswer", points: 0, timeUsedMs };
     title = "Time's up";
     message = parseError
-      ? `No valid answer (${parseError})`
+      ? `No answer (${parseError})`
       : "You didn't submit an expression.";
   } else {
     const distance = Math.abs(result - state.target);
@@ -466,7 +466,12 @@ function appendNumber(n) {
     setExpression(String(n));
     return;
   }
-  if (last === "(" || OP_CHARS.includes(last)) {
+  if (last === "(") {
+    // Keep parens tight against their contents: (8 × 10), not ( 8 × 10).
+    setExpression(e + n);
+    return;
+  }
+  if (OP_CHARS.includes(last)) {
     setExpression(e.endsWith(" ") ? e + n : e + " " + n);
     return;
   }
@@ -480,8 +485,13 @@ function appendOp(op) {
   const last = lastNonSpace(e);
 
   if (op === "(") {
-    if (e === "" || last === "(" || OP_CHARS.includes(last)) {
-      e = e === "" ? "(" : e + " (";
+    if (e === "") {
+      e = "(";
+    } else if (last === "(") {
+      // Tight after another open paren: (( not ( (.
+      e = e + "(";
+    } else if (OP_CHARS.includes(last)) {
+      e = e + " (";
     } else {
       e = e + " × (";
     }
@@ -574,7 +584,8 @@ function tokenize(input) {
   return tokens;
 }
 
-function parseAndEvaluate(input) {
+function parseAndEvaluate(input, opts = {}) {
+  const loose = opts.loose === true;
   const tokens = tokenize(input);
   if (tokens.length === 0) throw new Error("Expression is empty.");
 
@@ -633,6 +644,7 @@ function parseAndEvaluate(input) {
   function applyOp(a, op, b) {
     if (op === "÷" && b === 0) throw new Error("Division by zero.");
     const r = OPS[op](a, b);
+    if (loose) return r;
     if (op === "÷" && !Number.isInteger(r)) throw new Error(`Division must be whole (${a} ÷ ${b} = ${r}).`);
     if (r < 0) throw new Error(`Intermediate result can't be negative (${a} ${op} ${b} = ${r}).`);
     return r;
@@ -838,7 +850,10 @@ function renderCurrent() {
     return;
   }
   let value;
-  try { value = parseAndEvaluate(state.expression); }
+  // Loose mode: show the running total even for expressions that break
+  // Countdown rules (negative intermediates, non-integer division). The
+  // strict check runs at submit time so the player sees what they've built.
+  try { value = parseAndEvaluate(state.expression, { loose: true }); }
   catch (_) {
     currentEl.textContent = "—";
     currentEl.classList.remove("has-value", "match");
