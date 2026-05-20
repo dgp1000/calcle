@@ -254,7 +254,7 @@ function showLockedInline() {
   lockedNotice.hidden = false;
   const r = state.result;
   if (r && r.kind === "noanswer") {
-    lockedSummary.textContent = "You didn't submit a valid answer. (0/10)";
+    lockedSummary.textContent = "You didn't submit a guess. (0/10)";
   } else if (r && r.distance != null) {
     const pts = r.points != null ? r.points : pointsFor(r.distance, r.timeUsedMs);
     let off;
@@ -390,7 +390,7 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
     state.result = { kind: "noanswer", points: 0, timeUsedMs };
     title = "Time's up";
     message = parseError
-      ? `No answer (${parseError})`
+      ? `No guess (${parseError})`
       : "You didn't submit an expression.";
   } else {
     const distance = Math.abs(result - state.target);
@@ -788,7 +788,7 @@ function buildShareText() {
   const date = todayKey();
   const bar = buildShareBar();
   if (!r || r.kind === "noanswer") {
-    return `Calcle ${date} — 0/10 (no answer)\n${bar}`;
+    return `Calcle ${date} — 0/10 (no guess)\n${bar}`;
   }
   const dist = r.distance;
   const pts = pointsFor(dist, r.timeUsedMs);
