@@ -332,8 +332,8 @@ function resultTitle(distance, points, byTimeout) {
   // Off by >10 — zero points. Tone scales with how far off.
   if (byTimeout) return "Time's up.";
   if (distance > 100) return "Way off this time.";
-  if (distance > 30)  return "Not even close!";
-  return "Not quite.";
+  if (distance > 30)  return "Not even close.";
+  return "Next time.";
 }
 
 function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) {
