@@ -56,13 +56,19 @@ function defaultStats() {
   return { currentStreak: 0, maxStreak: 0, streakLastDay: null, gamesPlayed: 0, wins: 0, totalPoints: 0 };
 }
 
-// Speed-based scoring: only exact hits score. Each unused 30-second bucket
-// adds one point — solve in the first 30s for 10/10, last 30s for 1/10,
-// run out the clock or miss the target for 0.
+// Tiered Countdown-style scoring with a speed bonus. Accuracy sets the ceiling
+// (10 exact / 7 within 5 / 5 within 10 / else 0); within each tier, each unused
+// 30-second bucket adds one point. Solve fast and accurate to hit the cap.
 function pointsFor(distance, timeUsedMs) {
-  if (distance !== 0) return 0;
+  if (distance == null) return 0;
+  let cap;
+  if (distance === 0) cap = 10;
+  else if (distance <= 5) cap = 7;
+  else if (distance <= 10) cap = 5;
+  else return 0;
   const remainingMs = Math.max(0, TIME_LIMIT_MS - (timeUsedMs ?? TIME_LIMIT_MS));
-  return Math.min(10, Math.floor(remainingMs / 30_000) + 1);
+  const speedPts = Math.floor(remainingMs / 30_000) + 1;
+  return Math.min(cap, speedPts);
 }
 
 function loadStored() {
@@ -329,9 +335,15 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
         : "Cut it close";
       title = `${praise}! 🎯`;
       message = `${points}/10 — solved in ${clock}.\n${exprText} = ${result}`;
+    } else if (distance <= 5) {
+      title = byTimeout ? "Time's up — so close!" : "So close!";
+      message = `${points}/10 — ${exprText} = ${result} (off by ${distance})`;
+    } else if (distance <= 10) {
+      title = byTimeout ? "Time's up" : "Close-ish";
+      message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
     } else {
       title = byTimeout ? "Time's up" : "Not quite";
-      message = `0/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
+      message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
     }
   }
   // Compute solution once for non-exact rounds; cache on state.result.
@@ -703,7 +715,7 @@ function buildShareText() {
   const clock = formatClock(r.timeUsedMs ?? TIME_LIMIT_MS);
   const headline = dist === 0
     ? `${pts}/10 🎯 in ${clock}`
-    : `0/10 (off by ${dist})`;
+    : `${pts}/10 (off by ${dist}, ${clock})`;
   return `Calcle ${date} — ${headline}\n${bar}`;
 }
 
