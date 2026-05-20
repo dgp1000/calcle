@@ -94,6 +94,16 @@ function saveStored(data) {
   catch (_) { /* localStorage unavailable; non-fatal */ }
 }
 
+// Persist (or clear) the in-progress round so refreshing the page resumes
+// the timer from the original start instead of resetting to 5:00. Closes
+// off the cheat where refreshing rewinds the clock.
+function persistActiveRound(active) {
+  const data = loadStored() || { stats: defaultStats() };
+  if (active) data.activeRound = active;
+  else delete data.activeRound;
+  saveStored(data);
+}
+
 function yesterdayKey(todayK) {
   const [y, m, d] = todayK.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
@@ -178,32 +188,56 @@ function newPuzzle({ devRandom = false } = {}) {
   const stored = loadStored();
   const alreadyPlayed = stored && stored.lastPlayed && stored.lastPlayed.date === today;
   const stats = (stored && stored.stats) || defaultStats();
+  // Resume an in-progress round if one exists for today and hasn't been
+  // finalised. Refreshing now restores the original startTimeMs and the
+  // expression-in-progress instead of resetting the clock.
+  const activeRound = (!alreadyPlayed && stored && stored.activeRound
+    && stored.activeRound.date === today)
+    ? stored.activeRound : null;
 
   state = {
     pool,
-    expression: "",
+    expression: activeRound ? (activeRound.expression || "") : "",
     target,
-    phase: alreadyPlayed ? "locked" : "idle",
-    endTimeMs: 0,
+    phase: alreadyPlayed ? "locked" : (activeRound ? "running" : "idle"),
+    startTimeMs: activeRound ? activeRound.startTimeMs : 0,
+    endTimeMs: activeRound ? activeRound.startTimeMs + TIME_LIMIT_MS : 0,
     msLeft: TIME_LIMIT_MS,
     result: alreadyPlayed ? stored.lastPlayed.result : null,
     stats,
   };
 
-  exprInput.value = "";
+  exprInput.value = state.expression;
   endModal.hidden = true;
   startArea.hidden = false;
   setStatus("");
 
   if (alreadyPlayed) {
     showLockedInline();
+  } else if (activeRound) {
+    // Resuming after refresh.
+    startArea.hidden = true;
+    startBtn.hidden = true;
+    lockedNotice.hidden = true;
+    const remaining = state.endTimeMs - Date.now();
+    if (remaining <= 0) {
+      // Clock already expired during the refresh — finalise as a timeout
+      // with whatever expression was in progress.
+      timeUp();
+    } else {
+      scheduleTick();
+    }
   } else {
     startBtn.hidden = false;
     lockedNotice.hidden = true;
   }
 
   render();
-  renderTimer(TIME_LIMIT_MS);
+  if (state.phase === "running") {
+    renderTimer(Math.max(0, state.endTimeMs - Date.now()));
+  } else {
+    renderTimer(TIME_LIMIT_MS);
+  }
 }
 
 function shuffle(arr) { const a = arr.slice(); shuffleInPlace(a); return a; }
@@ -266,6 +300,11 @@ function startRound() {
   state.phase = "running";
   state.startTimeMs = Date.now();
   state.endTimeMs = state.startTimeMs + TIME_LIMIT_MS;
+  persistActiveRound({
+    date: todayKey(),
+    startTimeMs: state.startTimeMs,
+    expression: "",
+  });
   startArea.hidden = true;
   setStatus("");
   scheduleTick();
@@ -548,6 +587,14 @@ function setExpression(e) {
   state.expression = e;
   exprInput.value = e;
   setStatus("");
+  // Mirror the in-progress expression to storage so refresh resumes here.
+  if (state.phase === "running") {
+    persistActiveRound({
+      date: todayKey(),
+      startTimeMs: state.startTimeMs,
+      expression: e,
+    });
+  }
   render();
 }
 
@@ -934,6 +981,13 @@ endModal.addEventListener("click", e => {
 exprInput.addEventListener("input", e => {
   state.expression = e.target.value;
   setStatus("");
+  if (state.phase === "running") {
+    persistActiveRound({
+      date: todayKey(),
+      startTimeMs: state.startTimeMs,
+      expression: e.target.value,
+    });
+  }
   render();
 });
 exprInput.addEventListener("keydown", e => {
