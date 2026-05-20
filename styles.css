@@ -507,11 +507,12 @@ main {
 }
 
 .share-bar {
-  font-size: 1.6rem;
-  letter-spacing: 0.1em;
+  font-size: 1.4rem;
+  letter-spacing: 0.04em;
   line-height: 1;
   margin: 0.75rem 0 0.25rem;
   text-align: center;
+  white-space: nowrap;
 }
 .share-bar:empty { display: none; }
 
