@@ -17,7 +17,18 @@ const OPS = {
 const OP_CHARS = "+−×÷";
 
 // --- Daily-puzzle plumbing ---
-const STORAGE_KEY = "calcle:state";
+const STORAGE_KEY = "crunch:state";
+const LEGACY_STORAGE_KEY = "calcle:state";
+// Migrate any pre-rename save once on load so existing streaks survive.
+try {
+  if (!localStorage.getItem(STORAGE_KEY)) {
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy) {
+      localStorage.setItem(STORAGE_KEY, legacy);
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+  }
+} catch (_) { /* localStorage unavailable; non-fatal */ }
 
 function todayKey() {
   const d = new Date();
@@ -788,7 +799,7 @@ function buildShareText() {
   const date = todayKey();
   const bar = buildShareBar();
   if (!r || r.kind === "noanswer") {
-    return `Calcle ${date} — 0/10 (no guess)\n${bar}`;
+    return `Crunch ${date} — 0/10 (no guess)\n${bar}`;
   }
   const dist = r.distance;
   const pts = pointsFor(dist, r.timeUsedMs);
@@ -796,7 +807,7 @@ function buildShareText() {
   const headline = dist === 0
     ? `${pts}/10 🎯 in ${clock}`
     : `${pts}/10 (off by ${dist}, ${clock})`;
-  return `Calcle ${date} — ${headline}\n${bar}`;
+  return `Crunch ${date} — ${headline}\n${bar}`;
 }
 
 function renderShareBars() {
@@ -817,7 +828,7 @@ async function shareResult(btn) {
   // Messages / WhatsApp / Mail / etc.
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Calcle", text: shareBody });
+      await navigator.share({ title: "Crunch", text: shareBody });
       return;
     } catch (err) {
       // User dismissed the sheet — bail quietly.
@@ -1011,7 +1022,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// Tap-friendly reset: triple-tap the "Calcle" title within 1.5s.
+// Tap-friendly reset: triple-tap the "Crunch" title within 1.5s.
 // Long-press was unreliable on iOS Safari (text selection magnifier still
 // appears even with -webkit-touch-callout/user-select disabled). Quick
 // successive taps don't trigger any native gesture, and the third tap
@@ -1037,7 +1048,7 @@ document.addEventListener("keydown", e => {
 })();
 
 // Safari bfcache repaint bug: restoring via back/forward sometimes leaves the
-// gradient-clipped CALCLE text invisible (border stays, letters vanish).
+// gradient-clipped CRUNCH text invisible (border stays, letters vanish).
 // Force a reflow on persisted pageshow so the gradient gets re-rasterised.
 window.addEventListener("pageshow", e => {
   if (!e.persisted) return;
