@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <header>
     <h1>Calcle</h1>
-    <p class="tagline">Hit the target in 60 seconds or less.</p>
+    <p class="tagline">Hit the target — the faster, the better. You've got 5 minutes.</p>
   </header>
 
   <main>
@@ -29,11 +29,11 @@
 
     <section class="timer-section" aria-label="Time remaining">
       <div class="timer-bar" id="timerBar" role="timer" aria-live="off"></div>
-      <div class="timer-readout"><span id="timerReadout">60</span>s left</div>
+      <div class="timer-readout"><span id="timerReadout">5:00</span> left</div>
     </section>
 
     <div class="start-area" id="startArea">
-      <button id="startBtn" class="primary big" type="button">Start 60-second round</button>
+      <button id="startBtn" class="primary big" type="button">Start 5-minute round</button>
       <div id="lockedNotice" class="locked-notice" hidden>
         <strong>Today's puzzle has been completed.</strong>
         <p id="lockedSummary"></p>
@@ -46,12 +46,12 @@
         <details class="share-legend">
           <summary>What do the squares mean?</summary>
           <ul>
-            <li><span class="sq">🟩</span> 10 pts — exact hit</li>
-            <li><span class="sq">🟨</span> 7 pts — within 5</li>
-            <li><span class="sq">🟧</span> 5 pts — within 10</li>
-            <li><span class="sq">⬛</span> 0 pts — further off</li>
+            <li><span class="sq">🟩</span> 8–10 pts — solved fast</li>
+            <li><span class="sq">🟨</span> 4–7 pts — solved at a steady pace</li>
+            <li><span class="sq">🟧</span> 1–3 pts — solved near the buzzer</li>
+            <li><span class="sq">⬛</span> 0 pts — missed the target or ran out of time</li>
           </ul>
-          <p class="legend-foot">Number of filled squares = your score out of 10. Color shows the band.</p>
+          <p class="legend-foot">Only exact hits score. Each unused 30s adds a point — solve in the first 30s for 10/10.</p>
         </details>
         <p class="hint">Next puzzle in <span id="lockedCountdown">…</span> (your local midnight)</p>
       </div>
@@ -106,16 +106,16 @@
       <details class="share-legend">
         <summary>What do the squares mean?</summary>
         <ul>
-          <li><span class="sq">🟩</span> 10 pts — exact hit</li>
-          <li><span class="sq">🟨</span> 7 pts — within 5</li>
-          <li><span class="sq">🟧</span> 5 pts — within 10</li>
-          <li><span class="sq">⬛</span> 0 pts — further off</li>
+          <li><span class="sq">🟩</span> 8–10 pts — solved fast</li>
+          <li><span class="sq">🟨</span> 4–7 pts — solved at a steady pace</li>
+          <li><span class="sq">🟧</span> 1–3 pts — solved near the buzzer</li>
+          <li><span class="sq">⬛</span> 0 pts — missed the target or ran out of time</li>
         </ul>
-        <p class="legend-foot">Number of filled squares = your score out of 10. Color shows the band.</p>
+        <p class="legend-foot">Only exact hits score. Each unused 30s adds a point — solve in the first 30s for 10/10.</p>
       </details>
     </div>
   </div>
 
-  <script src="script.js?v=10"></script>
+  <script src="script.js?v=11"></script>
 </body>
 </html>

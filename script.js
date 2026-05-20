@@ -1,8 +1,8 @@
 "use strict";
 
-const TIME_LIMIT_MS = 60_000;
-const WARN_AT_MS = 20_000;
-const DANGER_AT_MS = 10_000;
+const TIME_LIMIT_MS = 300_000;
+const WARN_AT_MS = 100_000;
+const DANGER_AT_MS = 50_000;
 
 const LARGE_POOL = [25, 50, 75, 100];
 const LARGE_COUNT = 2;
@@ -56,13 +56,13 @@ function defaultStats() {
   return { currentStreak: 0, maxStreak: 0, streakLastDay: null, gamesPlayed: 0, wins: 0, totalPoints: 0 };
 }
 
-// Countdown-style scoring: 10 exact, 7 within 5, 5 within 10, else 0.
-function pointsFor(distance) {
-  if (distance == null) return 0;
-  if (distance === 0) return 10;
-  if (distance <= 5)  return 7;
-  if (distance <= 10) return 5;
-  return 0;
+// Speed-based scoring: only exact hits score. Each unused 30-second bucket
+// adds one point — solve in the first 30s for 10/10, last 30s for 1/10,
+// run out the clock or miss the target for 0.
+function pointsFor(distance, timeUsedMs) {
+  if (distance !== 0) return 0;
+  const remainingMs = Math.max(0, TIME_LIMIT_MS - (timeUsedMs ?? TIME_LIMIT_MS));
+  return Math.min(10, Math.floor(remainingMs / 30_000) + 1);
 }
 
 function loadStored() {
@@ -127,8 +127,10 @@ const endShareBar     = document.getElementById("endShareBar");
 const lockedShareBar  = document.getElementById("lockedShareBar");
 const opButtons       = Array.from(document.querySelectorAll(".op-btn"));
 
-// Build the 60-cell timer bar once.
+// Build the timer bar once. 60 cells regardless of round length — each cell
+// represents an equal slice of the total time (5s per cell at 5min limit).
 const TIMER_CELLS = 60;
+const MS_PER_CELL = TIME_LIMIT_MS / TIMER_CELLS;
 const timerCells = [];
 for (let i = 0; i < TIMER_CELLS; i++) {
   const c = document.createElement("div");
@@ -209,11 +211,11 @@ function showLockedInline() {
   if (r && r.kind === "noanswer") {
     lockedSummary.textContent = "You didn't submit a valid answer. (0/10)";
   } else if (r && r.distance != null) {
-    const pts = r.points != null ? r.points : pointsFor(r.distance);
+    const pts = r.points != null ? r.points : pointsFor(r.distance, r.timeUsedMs);
     let off;
     if (r.distance === 0) {
-      const secs = r.timeUsedMs ? Math.max(1, Math.round(r.timeUsedMs / 1000)) : null;
-      off = secs != null ? `exact hit in ${secs}s 🎯` : "exact hit 🎯";
+      const clock = r.timeUsedMs != null ? formatClock(r.timeUsedMs) : null;
+      off = clock != null ? `exact hit in ${clock} 🎯` : "exact hit 🎯";
     } else {
       off = `off by ${r.distance}`;
     }
@@ -314,24 +316,22 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
       : "You didn't submit an expression.";
   } else {
     const distance = Math.abs(result - state.target);
-    points = pointsFor(distance);
+    points = pointsFor(distance, timeUsedMs);
     state.result = { exprText, result, distance, byTimeout, timeUsedMs, points };
-    const secs = Math.max(1, Math.round(timeUsedMs / 1000));
+    const clock = formatClock(timeUsedMs);
     if (distance === 0) {
       const praise = byTimeout
         ? "Just in time"
-        : secs <= 10 ? "Lightning fast"
-        : secs <= 25 ? "Brilliant"
-        : secs <= 45 ? "Nice one"
-        : "You got there";
+        : points === 10 ? "Lightning fast"
+        : points >= 8   ? "Brilliant"
+        : points >= 5   ? "Nice one"
+        : points >= 3   ? "You got there"
+        : "Cut it close";
       title = `${praise}! 🎯`;
-      message = `${points}/10 — solved in ${secs}s.\n${exprText} = ${result}`;
-    } else if (distance <= 5) {
-      title = byTimeout ? "Time's up — so close!" : "So close!";
-      message = `${points}/10 — ${exprText} = ${result} (off by ${distance})`;
+      message = `${points}/10 — solved in ${clock}.\n${exprText} = ${result}`;
     } else {
-      title = byTimeout ? "Time's up" : "Submitted";
-      message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
+      title = byTimeout ? "Time's up" : "Not quite";
+      message = `0/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
     }
   }
   // Compute solution once for non-exact rounds; cache on state.result.
@@ -345,7 +345,7 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
   renderShareBars();
   endModal.hidden = false;
 
-  // Update stats. Streak still tracks exact hits only; totalPoints accumulates partial credit.
+  // Update stats. Streak tracks exact hits only; totalPoints accumulates speed-based scores.
   const today = todayKey();
   const won = !!(state.result && state.result.distance === 0);
   const prev = state.stats || defaultStats();
@@ -682,11 +682,12 @@ function buildShareBar() {
   const r = state && state.result;
   const pts = !r ? 0
             : r.points != null ? r.points
-            : r.distance != null ? pointsFor(r.distance)
+            : r.distance != null ? pointsFor(r.distance, r.timeUsedMs)
             : 0;
   // For 0 pts, show the full row as black so the band is still visible.
   if (pts === 0) return "⬛".repeat(10);
-  const filledGlyph = pts === 10 ? "🟩" : pts === 7 ? "🟨" : "🟧";
+  // Color band reflects speed: 8-10 green, 4-7 yellow, 1-3 orange.
+  const filledGlyph = pts >= 8 ? "🟩" : pts >= 4 ? "🟨" : "🟧";
   return filledGlyph.repeat(pts) + "⬜".repeat(10 - pts);
 }
 
@@ -698,11 +699,11 @@ function buildShareText() {
     return `Calcle ${date} — 0/10 (no answer)\n${bar}`;
   }
   const dist = r.distance;
-  const pts = pointsFor(dist);
-  const secs = r.timeUsedMs != null ? Math.max(1, Math.round(r.timeUsedMs / 1000)) : 60;
+  const pts = pointsFor(dist, r.timeUsedMs);
+  const clock = formatClock(r.timeUsedMs ?? TIME_LIMIT_MS);
   const headline = dist === 0
-    ? `${pts}/10 🎯 in ${secs}s`
-    : `${pts}/10 (off by ${dist}, ${secs}s)`;
+    ? `${pts}/10 🎯 in ${clock}`
+    : `0/10 (off by ${dist})`;
   return `Calcle ${date} — ${headline}\n${bar}`;
 }
 
@@ -765,19 +766,27 @@ function render() {
   renderCurrent();
 }
 
+function formatClock(ms) {
+  const totalSecs = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(totalSecs / 60);
+  const s = totalSecs % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 function renderTimer(ms) {
   const running = state && state.phase === "running";
   const idle = state && state.phase === "idle";
   // On idle (pre-round) show a full green bar; once the round ends/locks, show the bar empty.
-  const showSecs = running ? Math.max(0, Math.ceil(ms / 1000))
+  const cellsLit = running ? Math.max(0, Math.ceil(ms / MS_PER_CELL))
                  : idle    ? TIMER_CELLS
                  :           0;
-  timerReadout.textContent = String(running ? showSecs : (idle ? TIMER_CELLS : 0));
+  const readoutMs = running ? ms : (idle ? TIME_LIMIT_MS : 0);
+  timerReadout.textContent = formatClock(readoutMs);
   const danger = running && ms <= DANGER_AT_MS;
   const warn = running && ms <= WARN_AT_MS && ms > DANGER_AT_MS;
   timerBar.classList.toggle("danger", danger);
   for (let i = 0; i < TIMER_CELLS; i++) {
-    const on = i < showSecs;
+    const on = i < cellsLit;
     const cell = timerCells[i];
     cell.classList.toggle("on", on);
     cell.classList.toggle("warn", on && warn);
