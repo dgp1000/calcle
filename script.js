@@ -308,6 +308,34 @@ function submitGuess() {
   finishRound(result, false, null, timeUsedMs);
 }
 
+// Modal title keyed off accuracy tier + speed-based points. Faster, closer
+// solves earn stronger praise; egregious misses get called out.
+function resultTitle(distance, points, byTimeout) {
+  if (distance === 0) {
+    if (byTimeout)       return "Just in time! 🎯";
+    if (points === 10)   return "Bullseye! 🎯";
+    if (points >= 8)     return "Brilliant! 🎯";
+    if (points >= 5)     return "Nice one! 🎯";
+    if (points >= 3)     return "Got there! 🎯";
+    return "Just made it! 🎯";
+  }
+  const prefix = byTimeout ? "Time's up — " : "";
+  if (distance <= 5) {
+    if (points >= 5) return prefix + "So close!";
+    if (points >= 3) return prefix + "Nearly had it!";
+    return prefix + "A hair off.";
+  }
+  if (distance <= 10) {
+    if (points >= 3) return prefix + "In the neighborhood.";
+    return prefix + "Within range.";
+  }
+  // Off by >10 — zero points. Tone scales with how far off.
+  if (byTimeout) return "Time's up.";
+  if (distance > 100) return "Way off this time.";
+  if (distance > 30)  return "Not even close!";
+  return "Not quite.";
+}
+
 function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) {
   const exprText = state.expression.replace(/=.*/, "").trim();
   let title, message;
@@ -325,24 +353,12 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
     points = pointsFor(distance, timeUsedMs);
     state.result = { exprText, result, distance, byTimeout, timeUsedMs, points };
     const clock = formatClock(timeUsedMs);
+    title = resultTitle(distance, points, byTimeout);
     if (distance === 0) {
-      const praise = byTimeout
-        ? "Just in time"
-        : points === 10 ? "Lightning fast"
-        : points >= 8   ? "Brilliant"
-        : points >= 5   ? "Nice one"
-        : points >= 3   ? "You got there"
-        : "Cut it close";
-      title = `${praise}! 🎯`;
       message = `${points}/10 — solved in ${clock}.\n${exprText} = ${result}`;
     } else if (distance <= 5) {
-      title = byTimeout ? "Time's up — so close!" : "So close!";
       message = `${points}/10 — ${exprText} = ${result} (off by ${distance})`;
-    } else if (distance <= 10) {
-      title = byTimeout ? "Time's up" : "Close-ish";
-      message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
     } else {
-      title = byTimeout ? "Time's up" : "Not quite";
       message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
     }
   }
