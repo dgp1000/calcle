@@ -958,4 +958,17 @@ document.addEventListener("keydown", e => {
   title.addEventListener("contextmenu", e => e.preventDefault());
 })();
 
+// Safari bfcache repaint bug: restoring via back/forward sometimes leaves the
+// gradient-clipped CALCLE text invisible (border stays, letters vanish).
+// Force a reflow on persisted pageshow so the gradient gets re-rasterised.
+window.addEventListener("pageshow", e => {
+  if (!e.persisted) return;
+  const title = document.querySelector("header h1");
+  if (!title) return;
+  title.style.display = "none";
+  void title.offsetHeight;
+  title.style.display = "";
+});
+
+
 newPuzzle();
