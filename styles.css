@@ -23,7 +23,12 @@ html, body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   min-height: 100vh;
-  /* Suppress iOS double-tap-to-zoom while keeping pinch-zoom available. */
+}
+
+/* Suppress browsers' double-tap-to-zoom on every interactive element. Setting
+   touch-action on body alone isn't reliable in iOS Safari — it has to be on
+   the tap target itself. Pinch-zoom is still allowed elsewhere. */
+button, input, .tile, header h1 {
   touch-action: manipulation;
 }
 
