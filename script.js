@@ -749,12 +749,16 @@ function renderShareBars() {
 async function shareResult(btn) {
   const text = buildShareText();
   const url = location.href.split("?")[0].split("#")[0];
+  // Merge URL into the text body. iMessage and some other apps turn the
+  // separate `url` field into a rich-link card and drop the score+bar
+  // entirely — combining keeps the headline + share bar visible.
+  const shareBody = `${text}\n${url}`;
 
   // Native share sheet (iOS, Android, modern desktop) — lets the user pick
   // Messages / WhatsApp / Mail / etc.
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Calcle", text, url });
+      await navigator.share({ title: "Calcle", text: shareBody });
       return;
     } catch (err) {
       // User dismissed the sheet — bail quietly.
@@ -764,7 +768,7 @@ async function shareResult(btn) {
   }
 
   // Clipboard fallback (desktop Firefox, anything without Web Share).
-  const clipText = `${text}\n${url}`;
+  const clipText = shareBody;
   let ok = false;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
