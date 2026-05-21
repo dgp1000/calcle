@@ -1025,7 +1025,10 @@ document.addEventListener("keydown", e => {
 // Long-press was unreliable on iOS Safari (text selection magnifier still
 // appears even with -webkit-touch-callout/user-select disabled). Quick
 // successive taps don't trigger any native gesture, and the third tap
-// fires confirm() inside an active user gesture.
+// fires confirm() inside an active user gesture. Listening on `pointerup`
+// rather than `click` because the page-wide double-tap-zoom guard below
+// preventDefaults touchend, which suppresses the synthetic click for taps
+// 2 and 3 — pointerup fires regardless.
 (() => {
   const title = document.querySelector("header h1");
   if (!title) return;
@@ -1033,7 +1036,7 @@ document.addEventListener("keydown", e => {
   const REQUIRED = 3;
   let taps = [];
 
-  title.addEventListener("click", () => {
+  title.addEventListener("pointerup", () => {
     const now = Date.now();
     taps = taps.filter(t => now - t < WINDOW_MS);
     taps.push(now);
