@@ -1,6 +1,31 @@
 /* Theming. Two palettes, switched by a `data-theme` attribute on <html>.
    A tiny inline script in <head> sets the attribute before paint to avoid
-   a flash of wrong theme on slow first loads. */
+   a flash of wrong theme on slow first loads.
+
+   :root must come BEFORE the [data-theme] rules so the attribute selectors
+   (same specificity, but later in the source) win when toggling. */
+
+:root {
+  --bg: #121213;
+  --surface: #1e1e20;
+  --surface-2: #2a2a2d;
+  --border: #3a3a3d;
+  --text: #f5f5f5;
+  --text-dim: #a0a0a5;
+  --green: #538d4e;
+  --yellow: #b59f3b;
+  --gray: #3a3a3c;
+  --accent: #4f8cff;
+  --accent-hover: #6ba0ff;
+  --danger: #c0392b;
+  --orange: #d27537;
+  --tile-color: #f6ecd2;
+  --op-color: #dbe6ff;
+  --paren-color: #c8a8a8;
+  --title-border: #2a4060;
+  --error-text: #ff7d7d;
+  --streak-color: #ff7d3b;
+}
 
 [data-theme="dark"] {
   --bg: #121213;
@@ -44,30 +69,6 @@
   --title-border: #2a4060;
   --error-text: #b91c1c;
   --streak-color: #c2410c;
-}
-
-/* Default to dark when no attribute is set — the inline script in <head>
-   normally beats this, but it covers the no-JS edge case. */
-:root {
-  --bg: #121213;
-  --surface: #1e1e20;
-  --surface-2: #2a2a2d;
-  --border: #3a3a3d;
-  --text: #f5f5f5;
-  --text-dim: #a0a0a5;
-  --green: #538d4e;
-  --yellow: #b59f3b;
-  --gray: #3a3a3c;
-  --accent: #4f8cff;
-  --accent-hover: #6ba0ff;
-  --danger: #c0392b;
-  --orange: #d27537;
-  --tile-color: #f6ecd2;
-  --op-color: #dbe6ff;
-  --paren-color: #c8a8a8;
-  --title-border: #2a4060;
-  --error-text: #ff7d7d;
-  --streak-color: #ff7d3b;
 }
 
 * { box-sizing: border-box; }
@@ -124,8 +125,8 @@ header {
 
 .theme-btn {
   position: absolute;
-  top: 2.5rem;
-  right: 0;
+  top: 0;
+  right: 2.5rem;
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
