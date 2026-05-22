@@ -156,6 +156,7 @@ const lockedShareBar  = document.getElementById("lockedShareBar");
 const introModal      = document.getElementById("introModal");
 const introCloseBtn   = document.getElementById("introCloseBtn");
 const helpBtn         = document.getElementById("helpBtn");
+const themeBtn        = document.getElementById("themeBtn");
 const opButtons       = Array.from(document.querySelectorAll(".op-btn"));
 
 // Build the timer bar once. 60 cells regardless of round length — each cell
@@ -1000,6 +1001,34 @@ function dismissIntro() {
 }
 helpBtn.addEventListener("click", showIntro);
 introCloseBtn.addEventListener("click", dismissIntro);
+
+// --- Theme toggle ---
+// Effective theme already applied by the inline <head> script; we just
+// reflect it in the button icon and wire click to flip + persist.
+const THEME_KEY = "crunch:theme";
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+}
+function applyTheme(theme, { persist = true } = {}) {
+  document.documentElement.setAttribute("data-theme", theme);
+  themeBtn.textContent = theme === "light" ? "🌙" : "☀️";
+  themeBtn.setAttribute("aria-label", theme === "light" ? "Switch to dark mode" : "Switch to light mode");
+  if (persist) {
+    try { localStorage.setItem(THEME_KEY, theme); } catch (_) { }
+  }
+}
+applyTheme(currentTheme(), { persist: false });
+themeBtn.addEventListener("click", () => {
+  applyTheme(currentTheme() === "light" ? "dark" : "light");
+});
+
+// Auto-follow OS theme changes — but only when the player hasn't made an
+// explicit choice. Once they tap the toggle, their preference sticks.
+const systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+systemDarkQuery.addEventListener("change", e => {
+  if (localStorage.getItem(THEME_KEY)) return; // explicit choice wins
+  applyTheme(e.matches ? "dark" : "light", { persist: false });
+});
 introModal.addEventListener("click", e => {
   if (e.target === introModal) dismissIntro();
 });

@@ -35,7 +35,13 @@ const sandbox = {
     addEventListener() {},
     createElement: () => stubEl(),
     body: stubEl(),
+    documentElement: stubEl(),
   },
+  matchMedia: () => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {},
+  }),
   localStorage: {
     _: {},
     getItem(k) { return this._[k] ?? null; },
