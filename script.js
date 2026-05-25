@@ -907,7 +907,7 @@ function renderTimer(ms) {
 
 function renderCurrent() {
   if (!state || state.phase !== "running" || !state.expression.trim()) {
-    currentEl.textContent = "—";
+    currentEl.textContent = "Total";
     currentEl.classList.remove("has-value", "match");
     return;
   }
@@ -917,6 +917,10 @@ function renderCurrent() {
   // strict check runs at submit time so the player sees what they've built.
   try { value = parseAndEvaluate(state.expression, { loose: true }); }
   catch (_) {
+    // Mid-build state — e.g. "50 ×" with a trailing operator. We're in
+    // a running game, just don't have a parseable expression yet.
+    // Show "—" rather than the pre-game "Total" label so it reads as
+    // "still being built" instead of "no game in progress."
     currentEl.textContent = "—";
     currentEl.classList.remove("has-value", "match");
     return;

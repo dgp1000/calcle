@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=31" />
+  <link rel="stylesheet" href="styles.css?v=45" />
   <script>
     // Set the theme attribute synchronously before the stylesheet kicks in,
     // so first paint is correct. Order of precedence:
@@ -49,15 +49,10 @@
   </header>
 
   <main>
-    <section class="top-row">
-      <div class="target-area">
-        <div class="target-label">Target</div>
-        <div class="target-number" id="target">—</div>
-      </div>
-      <div class="current-area">
-        <div class="current-label">Yours</div>
-        <div class="current-number" id="current">—</div>
-      </div>
+    <!-- Target alone at the top — the goal you're solving for. -->
+    <section class="target-banner">
+      <div class="target-label">Target</div>
+      <div class="target-number" id="target">—</div>
     </section>
 
     <section class="timer-section" aria-label="Time remaining">
@@ -91,23 +86,10 @@
     </div>
 
     <section class="board">
+      <!-- 1. Tiles -->
       <div class="numbers-row" id="numbersRow"></div>
 
-      <div class="builder">
-        <input
-          id="exprInput"
-          type="text"
-          inputmode="none"
-          readonly
-          tabindex="-1"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          placeholder="Tap the tiles below to build an expression…"
-        />
-        <div class="builder-hint" id="builderHint">Tap the tiles, ops, and parenthesis below.</div>
-      </div>
-
+      <!-- 2. Operators + parens -->
       <div class="operators">
         <button class="op-btn" data-op="+" type="button">+</button>
         <button class="op-btn" data-op="−" type="button">−</button>
@@ -117,9 +99,46 @@
         <button class="op-btn" data-op=")" type="button">)</button>
       </div>
 
+      <!-- 3. Results box — your in-progress expression, the live value
+           it computes to, and inline edit controls. Reads as one
+           "equation in progress" block. -->
+      <div class="results-box">
+        <div class="expr-wrap">
+          <input
+            id="exprInput"
+            type="text"
+            inputmode="none"
+            readonly
+            tabindex="-1"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder=" "
+          />
+          <!-- Marquee-style hint that scrolls left-to-right inside the
+               expression box when it's empty, so the full instruction
+               reads even on narrow viewports. Hidden once the player
+               starts building (input no longer matches :placeholder-shown). -->
+          <div class="expr-hint" aria-hidden="true">
+            <span>Tap the tiles, ops, and parenthesis above to build your equation…</span>
+          </div>
+        </div>
+        <div class="equals-row">
+          <button id="resetBtn" class="edit-btn" type="button">Clear</button>
+          <div class="equals-divider" aria-hidden="true"></div>
+          <button id="backspaceBtn" class="edit-btn" type="button" aria-label="Backspace">⌫</button>
+        </div>
+        <div class="results-equals">
+          <span class="current-number" id="current">Total</span>
+        </div>
+        <!-- Accessible-only hint kept for screen readers; the visible
+             marquee is aria-hidden, so without this assistive tech users
+             would lose the instruction. Hidden visually via .sr-only. -->
+        <div class="builder-hint sr-only" id="builderHint">Tap the tiles, ops, and parenthesis above.</div>
+      </div>
+
+      <!-- 4. Submit guess — full-width primary action. -->
       <div class="controls">
-        <button id="backspaceBtn" type="button">⌫</button>
-        <button id="resetBtn" type="button">Clear</button>
         <button id="submitBtn" class="primary" type="button">Submit guess</button>
       </div>
     </section>
@@ -167,7 +186,7 @@
     </div>
   </div>
 
-  <script src="script.js?v=26"></script>
+  <script src="script.js?v=28"></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "81ef4e3318a44a1ba9fe61597e36bcfe"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

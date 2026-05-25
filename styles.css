@@ -194,11 +194,10 @@ main {
   gap: 1rem;
 }
 
-.top-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  align-items: center;
+/* Target banner — solo block at the top. Goal you're solving for. */
+.target-banner {
+  text-align: center;
+  padding: 0.5rem 0;
 }
 
 .target-area, .current-area {
@@ -226,7 +225,10 @@ main {
 
 .target-number { color: var(--accent); }
 .current-number { color: var(--text-dim); }
-.current-number.has-value { color: var(--text); }
+/* While the player is building an expression that computes to something,
+ * the result reads in a dull gold — clearly "not the target yet" but
+ * not failure either. Flips to bright green only on an exact match. */
+.current-number.has-value { color: var(--yellow); }
 .current-number.match     { color: var(--green); }
 
 /* Timer bar */
@@ -379,6 +381,14 @@ main {
   font-style: italic;
 }
 
+/* Board — vertical stack of tiles / ops / results / submit, with a
+ * consistent gap so each row has breathing room. */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
 /* Number tiles */
 .numbers-row {
   display: grid;
@@ -415,7 +425,144 @@ main {
   opacity: 0.6;
 }
 
-/* Builder area */
+/* Results box — sits between operators and submit. Wraps the in-progress
+ * expression, the live computed "Yours" value, and inline edit controls
+ * (Clear + ⌫). Reads as one "equation in progress" block. */
+.results-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Equals row — Clear on the left, the big "=" divider centred,
+ * ⌫ on the right. Uses a 3-column grid (1fr auto 1fr) so the divider
+ * is dead-centred in the row regardless of the buttons' different
+ * widths; each button is anchored to its outer edge via justify-self. */
+.equals-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0 0.1rem;
+}
+.equals-row > .edit-btn:first-child { justify-self: start; }
+.equals-row > .edit-btn:last-child  { justify-self: end; }
+.equals-divider {
+  width: 64px;
+  height: 10px;
+  border-top: 3px solid var(--text-dim);
+  border-bottom: 3px solid var(--text-dim);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Result line — centred, sits below the equals-divider. The result
+ * number now stands alone since the equals "label" became the divider. */
+.results-equals {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding: 0.15rem 0;
+}
+.results-equals .current-number {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+/* Edit buttons (Clear + ⌫). Shared styling regardless of which row they
+ * live in. */
+.edit-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 2.4rem;
+}
+.edit-btn:hover:not(:disabled) { border-color: var(--accent); }
+.edit-btn:active:not(:disabled) { transform: scale(0.96); }
+.edit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Expression wrap — positioning context for the marquee hint that
+ * overlays the empty input. */
+.expr-wrap {
+  position: relative;
+}
+
+/* Marquee-scrolling hint. Shown when #exprInput is empty (placeholder
+ * is a single space so :placeholder-shown matches but the placeholder
+ * itself is invisible). Hidden once the player taps the first tile. */
+.expr-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--text-dim);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 1.05rem;
+  border-radius: 6px;
+}
+.expr-hint span {
+  display: inline-block;
+  /* Starts off-screen right, scrolls leftward across the visible area,
+   * exits off-screen left, then loops. Slow enough to read comfortably. */
+  animation: expr-hint-scroll 14s linear infinite;
+  will-change: transform;
+}
+@keyframes expr-hint-scroll {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+/* Hide the marquee once the expression has content. */
+.expr-wrap:has(#exprInput:not(:placeholder-shown)) .expr-hint {
+  display: none;
+}
+
+/* Accessibility-only helper — visible to screen readers, removed from
+ * the visual layout. The marquee is aria-hidden, so this preserves the
+ * instruction for assistive tech without showing it twice on screen. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.results-edit button {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 2.4rem;
+}
+.results-edit button:hover:not(:disabled) { border-color: var(--accent); }
+.results-edit button:active:not(:disabled) { transform: scale(0.96); }
+.results-edit button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Builder area (legacy — wrapper still exists in older builds, keep
+ * the class around so script.js doesn't choke on lookups elsewhere) */
 .builder {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -436,6 +583,7 @@ main {
   cursor: default;
   user-select: none;
   -webkit-user-select: none;
+  text-align: center;
 }
 #exprInput::placeholder { color: var(--text-dim); }
 
@@ -482,23 +630,23 @@ main {
   color: var(--paren-color);
 }
 
-/* Controls */
+/* Controls — Submit guess alone now (Clear + ⌫ live inside .results-box). */
 .controls {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr;
+  grid-template-columns: 1fr;
   gap: 0.4rem;
 }
 
 .controls button {
-  padding: 0.7rem 0.5rem;
+  padding: 0.9rem 0.5rem;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 }
 .controls button:hover:not(:disabled) { border-color: var(--accent); }
 .controls button.primary { background: var(--accent); border-color: var(--accent); color: white; }
