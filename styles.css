@@ -638,6 +638,10 @@ main {
   gap: 0.4rem;
   align-items: stretch;
 }
+/* Setting display: flex above overrides the UA stylesheet's
+   [hidden] { display: none }, so we have to re-assert it. Without this
+   the hint button is visible in the idle phase before Start is pressed. */
+.hint-row[hidden] { display: none; }
 .hint-btn {
   align-self: center;
   padding: 0.45rem 0.9rem;
