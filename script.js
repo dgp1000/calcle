@@ -1163,7 +1163,10 @@ function renderTiles() {
     btn.type = "button";
     btn.className = "tile";
     if (used) btn.classList.add("used");
-    btn.disabled = state.phase !== "running";
+    // A used tile must be uncliclable, not just greyed — otherwise a
+    // double-tap silently builds an invalid expression and Submit fails
+    // later with a small status line that's easy to miss.
+    btn.disabled = state.phase !== "running" || used;
     btn.textContent = String(value);
     btn.addEventListener("click", () => appendNumber(value));
     numbersRow.appendChild(btn);
