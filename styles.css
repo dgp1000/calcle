@@ -684,6 +684,9 @@ main {
 .controls button.primary { background: var(--accent); border-color: var(--accent); color: white; }
 .controls button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 .controls button:disabled { opacity: 0.6; cursor: not-allowed; }
+/* Muted = still clickable but signalled as 'not ready yet'. Tap fires a
+   helper message instead of trying to evaluate an empty expression. */
+.controls button.muted { opacity: 0.6; }
 
 .status {
   text-align: center;

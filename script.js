@@ -507,6 +507,10 @@ function timeUp() {
 
 function submitGuess() {
   if (state.phase !== "running") return;
+  if (state.expression.trim() === "") {
+    setStatus("Build your guess first — tap tiles and operators above.", "error");
+    return;
+  }
   let result;
   try { result = parseAndEvaluate(state.expression); }
   catch (err) { setStatus(err.message, "error"); return; }
@@ -1178,7 +1182,11 @@ function renderControls() {
   const running = state.phase === "running";
   backspaceBtn.disabled = !running || empty;
   resetBtn.disabled     = !running || empty;
-  submitBtn.disabled    = !running || empty;
+  // Submit stays clickable when the expression is empty so a tap can
+  // trigger the "build an expression first" helper. Visually muted via
+  // the .muted class so it still reads as not-yet-usable.
+  submitBtn.disabled    = !running;
+  submitBtn.classList.toggle("muted", running && empty);
   exprInput.disabled    = !running;
   opButtons.forEach(b => { b.disabled = !running; });
 }
