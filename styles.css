@@ -630,6 +630,38 @@ main {
   color: var(--paren-color);
 }
 
+/* Hint row sits between the results box and Submit. Secondary affordance
+   that stays out of the way until the player wants it. */
+.hint-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+.hint-btn {
+  align-self: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hint-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.hint-btn:active:not(:disabled) { transform: scale(0.96); }
+.hint-btn:disabled { opacity: 0.5; cursor: default; }
+.hint-display {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-style: italic;
+  line-height: 1.35;
+}
+
 /* Controls — Submit guess alone now (Clear + ⌫ live inside .results-box). */
 .controls {
   display: grid;

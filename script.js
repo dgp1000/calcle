@@ -68,6 +68,138 @@ function defaultStats() {
   return { currentStreak: 0, maxStreak: 0, streakLastDay: null, gamesPlayed: 0, wins: 0, totalPoints: 0 };
 }
 
+// Parse a solver-produced expression (numbers + + − × ÷ + balanced parens) into
+// an AST node tree. Used purely for hint generation — we need *compute order*
+// of tiles and a step-by-step trace, neither of which can be read off the raw
+// text. The solver always fully parenthesises each binary op, so the grammar
+// at every level is `atom op atom` where atom is a number or `(expr)`.
+function parseSolverExpr(expr) {
+  if (!expr) return null;
+  const tokens = tokenize(String(expr));
+  let pos = 0;
+  function parseAtom() {
+    const t = tokens[pos];
+    if (!t) return null;
+    if (t.type === "NUM") { pos++; return { kind: "num", value: t.value }; }
+    if (t.type === "PAREN" && t.value === "(") {
+      pos++;
+      const inner = parseExpr();
+      if (tokens[pos] && tokens[pos].value === ")") pos++;
+      return inner;
+    }
+    return null;
+  }
+  function parseExpr() {
+    let left = parseAtom();
+    while (pos < tokens.length && tokens[pos].type === "OP") {
+      const op = tokens[pos].value; pos++;
+      const right = parseAtom();
+      left = { kind: "op", op, left, right };
+    }
+    return left;
+  }
+  return parseExpr();
+}
+
+// Tiles in the order they're first introduced into a computation: depth-first
+// into op children before lone-number children at each level. For
+// `75 + (100 ÷ 4)` this yields [100, 4, 75] — the order the player will
+// actually use them — not text order [75, 100, 4].
+function tilesInComputeOrder(node) {
+  if (!node) return [];
+  if (node.kind === "num") return [node.value];
+  const opsFirst = [];
+  const numsAfter = [];
+  if (node.left.kind === "op") opsFirst.push(...tilesInComputeOrder(node.left));
+  else numsAfter.push(node.left.value);
+  if (node.right.kind === "op") opsFirst.push(...tilesInComputeOrder(node.right));
+  else numsAfter.push(node.right.value);
+  return [...opsFirst, ...numsAfter];
+}
+
+// Step-by-step computation in evaluation order, each as
+// `"<lhs> <op> <rhs> = <result>"`. For `Add(Mul(75, 6), 22)` →
+// ["75 × 6 = 450", "450 + 22 = 472"]. The lhs/rhs are the actual values at
+// that step (so the second step shows the running total, not the original
+// sub-expression).
+function stepsInComputeOrder(node) {
+  const steps = [];
+  function applyOp(a, op, b) {
+    if (op === "+") return a + b;
+    if (op === "−") return a - b;
+    if (op === "×") return a * b;
+    if (op === "÷") return a / b;
+    return 0;
+  }
+  function recurse(n) {
+    if (!n) return 0;
+    if (n.kind === "num") return n.value;
+    const lv = recurse(n.left);
+    const rv = recurse(n.right);
+    const result = applyOp(lv, n.op, rv);
+    steps.push(`${lv} ${n.op} ${rv} = ${result}`);
+    return result;
+  }
+  recurse(node);
+  return steps;
+}
+
+// Build the ordered list of progressive hint strings for a given solver
+// expression. The number of levels scales with solution complexity:
+//   3-tile solution → 6 hints (3 tile reveals + start-with + 2 step reveals)
+//   4-tile solution → 8 hints
+//   2-tile solution → 4 hints
+// Last level is always the final step showing the complete computation.
+function buildHintLevels(solutionExpr) {
+  if (!solutionExpr) return [];
+  const ast = parseSolverExpr(solutionExpr);
+  if (!ast) return [];
+  const tiles = tilesInComputeOrder(ast);
+  const steps = stepsInComputeOrder(ast);
+  const levels = [];
+
+  // Phase 1 — reveal tiles one at a time, in compute order, cumulatively.
+  // Consistent phrasing across all tile reveals so the running list reads
+  // as one growing sentence over multiple clicks.
+  for (let i = 0; i < tiles.length; i++) {
+    levels.push(`The tiles used in this order: ${tiles.slice(0, i + 1).join(", ")}.`);
+  }
+
+  // Phase 2 — reveal the first operation as an expression only (no result).
+  // Skip for trivial 1-tile "solutions" where there's no operation to hint.
+  if (steps.length > 0) {
+    const firstOpExpr = steps[0].split(" = ")[0];
+    levels.push(`Start with: ${firstOpExpr}.`);
+  }
+
+  // Phase 3 — walk each computation step, showing the running total.
+  for (let i = 0; i < steps.length; i++) {
+    levels.push(`${steps[i]}.`);
+  }
+
+  // Phase 4 — final reveal of the full expression. For a 2-tile solution
+  // the last running-total step (`100 + 8 = 108`) IS the full expression,
+  // so skip the redundant level. Anything with nested ops genuinely benefits
+  // from seeing the full parenthesised form laid out.
+  if (steps.length > 1) {
+    const finalValue = steps[steps.length - 1].split(" = ")[1];
+    levels.push(`Full solution: ${solutionExpr} = ${finalValue}.`);
+  }
+
+  return levels;
+}
+
+function hintLevelsCount(solutionExpr) {
+  return buildHintLevels(solutionExpr).length;
+}
+
+function buildHintText(level, solutionExpr) {
+  const levels = buildHintLevels(solutionExpr);
+  if (levels.length === 0) return "";
+  const idx = Math.max(0, Math.min(level - 1, levels.length - 1));
+  return levels[idx];
+}
+
 // Tiered Countdown-style scoring with a speed bonus. Accuracy sets the ceiling
 // (10 exact / 7 within 5 / 5 within 10 / else 0); within each tier, each unused
 // 30-second bucket adds one point. Solve fast and accurate to hit the cap.
@@ -158,6 +290,9 @@ const introCloseBtn   = document.getElementById("introCloseBtn");
 const helpBtn         = document.getElementById("helpBtn");
 const themeBtn        = document.getElementById("themeBtn");
 const opButtons       = Array.from(document.querySelectorAll(".op-btn"));
+const hintRow         = document.getElementById("hintRow");
+const hintBtn         = document.getElementById("hintBtn");
+const hintDisplay     = document.getElementById("hintDisplay");
 
 // Build the timer bar once. 60 cells regardless of round length — each cell
 // represents an equal slice of the total time (5s per cell at 5min limit).
@@ -211,6 +346,12 @@ function newPuzzle({ devRandom = false } = {}) {
     && stored.activeRound.date === today)
     ? stored.activeRound : null;
 
+  // Pre-solve so we know up front whether hints are even possible (no
+  // exact solution → hint button hidden) and have the optimal expression
+  // cached for the hint generator.
+  const presolve = solve(pool, target);
+  const solutionExpr = presolve && presolve.distance === 0 ? presolve.expr : null;
+
   state = {
     pool,
     expression: activeRound ? (activeRound.expression || "") : "",
@@ -221,6 +362,10 @@ function newPuzzle({ devRandom = false } = {}) {
     msLeft: TIME_LIMIT_MS,
     result: alreadyPlayed ? stored.lastPlayed.result : null,
     stats,
+    solutionExpr,
+    hintCount: activeRound ? (activeRound.hintCount || 0)
+             : alreadyPlayed && stored.lastPlayed.result ? (stored.lastPlayed.result.hintCount || 0)
+             : 0,
   };
 
   exprInput.value = state.expression;
@@ -269,8 +414,11 @@ function showLockedInline() {
   startBtn.hidden = true;
   lockedNotice.hidden = false;
   const r = state.result;
+  const hintSuffix = r && r.hintCount
+    ? ` · ${r.hintCount} hint${r.hintCount === 1 ? "" : "s"} used`
+    : "";
   if (r && r.kind === "noanswer") {
-    lockedSummary.textContent = "You didn't submit a guess. (0/10)";
+    lockedSummary.textContent = `You didn't submit a guess. (0/10)${hintSuffix}`;
   } else if (r && r.distance != null) {
     const pts = r.points != null ? r.points : pointsFor(r.distance, r.timeUsedMs);
     let off;
@@ -280,7 +428,7 @@ function showLockedInline() {
     } else {
       off = `off by ${r.distance}`;
     }
-    lockedSummary.textContent = `${pts}/10 — ${r.exprText} = ${r.result} (${off})`;
+    lockedSummary.textContent = `${pts}/10 — ${r.exprText} = ${r.result} (${off})${hintSuffix}`;
   } else {
     lockedSummary.textContent = "";
   }
@@ -320,6 +468,7 @@ function startRound() {
     date: todayKey(),
     startTimeMs: state.startTimeMs,
     expression: "",
+    hintCount: 0,
   });
   startArea.hidden = true;
   setStatus("");
@@ -401,24 +550,31 @@ function finishRound(result, byTimeout, parseError, timeUsedMs = TIME_LIMIT_MS) 
   state.phase = "locked";
 
   let points = 0;
+  const hintCount = state.hintCount || 0;
   if (result === null) {
-    state.result = { kind: "noanswer", points: 0, timeUsedMs };
+    state.result = { kind: "noanswer", points: 0, timeUsedMs, hintCount };
     title = "Time's up";
+    const hintTail = hintCount
+      ? `\n${hintCount} hint${hintCount === 1 ? "" : "s"} used.`
+      : "";
     message = parseError
-      ? `No guess (${parseError})`
-      : "You didn't submit an expression.";
+      ? `No guess (${parseError})${hintTail}`
+      : `You didn't submit an expression.${hintTail}`;
   } else {
     const distance = Math.abs(result - state.target);
     points = pointsFor(distance, timeUsedMs);
-    state.result = { exprText, result, distance, byTimeout, timeUsedMs, points };
+    state.result = { exprText, result, distance, byTimeout, timeUsedMs, points, hintCount };
     const clock = formatClock(timeUsedMs);
     title = resultTitle(distance, points, byTimeout);
+    const hintTail = hintCount
+      ? `\n${hintCount} hint${hintCount === 1 ? "" : "s"} used.`
+      : "";
     if (distance === 0) {
-      message = `${points}/10 — solved in ${clock}.\n${exprText} = ${result}`;
+      message = `${points}/10 — solved in ${clock}.\n${exprText} = ${result}${hintTail}`;
     } else if (distance <= 5) {
-      message = `${points}/10 — ${exprText} = ${result} (off by ${distance})`;
+      message = `${points}/10 — ${exprText} = ${result} (off by ${distance})${hintTail}`;
     } else {
-      message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})`;
+      message = `${points}/10 — ${exprText} = ${result} (off by ${distance}, target was ${state.target})${hintTail}`;
     }
   }
   // Compute solution once for non-exact rounds; cache on state.result.
@@ -608,9 +764,51 @@ function setExpression(e) {
       date: todayKey(),
       startTimeMs: state.startTimeMs,
       expression: e,
+      hintCount: state.hintCount || 0,
     });
   }
   render();
+}
+
+// --- Hint ---
+function useHint() {
+  if (!state || state.phase !== "running") return;
+  if (!state.solutionExpr) return;
+  const max = hintLevelsCount(state.solutionExpr);
+  if ((state.hintCount || 0) >= max) return;
+  state.hintCount = (state.hintCount || 0) + 1;
+  // Persist so refresh restores both the count and the visible hint.
+  persistActiveRound({
+    date: todayKey(),
+    startTimeMs: state.startTimeMs,
+    expression: state.expression || "",
+    hintCount: state.hintCount,
+  });
+  renderHint();
+}
+
+function renderHint() {
+  if (!hintRow || !hintBtn || !hintDisplay) return;
+  // Hide the entire row when there's no solution to nudge toward, or when
+  // the round isn't actively in progress.
+  const canShow = state && state.phase === "running" && !!state.solutionExpr;
+  hintRow.hidden = !canShow;
+  if (!canShow) return;
+  const count = state.hintCount || 0;
+  const max = hintLevelsCount(state.solutionExpr);
+  if (count === 0) {
+    hintBtn.textContent = "Need a hint?";
+    hintBtn.disabled = false;
+    hintDisplay.hidden = true;
+    hintDisplay.textContent = "";
+    return;
+  }
+  hintBtn.textContent = count >= max
+    ? `Hint (${count} used)`
+    : `Another hint? (${count} used)`;
+  hintBtn.disabled = count >= max;
+  hintDisplay.hidden = false;
+  hintDisplay.textContent = buildHintText(count, state.solutionExpr);
 }
 
 // --- Tokenizer / parser ---
@@ -802,8 +1000,11 @@ function buildShareText() {
   const r = state && state.result;
   const date = todayKey();
   const bar = buildShareBar();
+  const hintsTag = r && r.hintCount
+    ? ` · ${r.hintCount} hint${r.hintCount === 1 ? "" : "s"}`
+    : "";
   if (!r || r.kind === "noanswer") {
-    return `Crunch ${date} — 0/10 (no guess)\n${bar}`;
+    return `Crunch ${date} — 0/10 (no guess)${hintsTag}\n${bar}`;
   }
   const dist = r.distance;
   const pts = pointsFor(dist, r.timeUsedMs);
@@ -811,7 +1012,7 @@ function buildShareText() {
   const headline = dist === 0
     ? `${pts}/10 🎯 in ${clock}`
     : `${pts}/10 (off by ${dist}, ${clock})`;
-  return `Crunch ${date} — ${headline}\n${bar}`;
+  return `Crunch ${date} — ${headline}${hintsTag}\n${bar}`;
 }
 
 function renderShareBars() {
@@ -875,6 +1076,7 @@ function render() {
   renderTiles();
   renderControls();
   renderCurrent();
+  renderHint();
 }
 
 function formatClock(ms) {
@@ -990,6 +1192,7 @@ opButtons.forEach(b => b.addEventListener("click", () => appendOp(b.dataset.op))
 backspaceBtn.addEventListener("click", backspace);
 resetBtn.addEventListener("click", clearExpression);
 submitBtn.addEventListener("click", submitGuess);
+if (hintBtn) hintBtn.addEventListener("click", useHint);
 newGameBtn.addEventListener("click", () => { endModal.hidden = true; });
 shareBtn.addEventListener("click", () => shareResult(shareBtn));
 lockedShareBtn.addEventListener("click", () => shareResult(lockedShareBtn));

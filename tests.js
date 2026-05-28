@@ -61,6 +61,8 @@ const src = fs.readFileSync(SCRIPT_PATH, "utf8") + `
 ;globalThis.__T = {
   pointsFor, parseAndEvaluate, tokenize, formatClock,
   seedFromString, mulberry32, solve, TIME_LIMIT_MS,
+  parseSolverExpr, tilesInComputeOrder, stepsInComputeOrder,
+  buildHintLevels, buildHintText, hintLevelsCount,
   setPool(pool) { state.pool = pool; },
 };
 `;
@@ -142,6 +144,88 @@ console.log("\nsolve:");
 const sol = T.solve([100, 5, 4], 109);
 check("solver finds 100+5+4=109 for target 109",
   sol && sol.distance === 0, "distance=0", sol);
+
+console.log("\nhint helpers — AST + compute order:");
+
+const ast1 = T.parseSolverExpr("(75 × 6) + 22");
+const tiles1 = T.tilesInComputeOrder(ast1);
+check("tiles in compute order — text-order matches compute-order case",
+  JSON.stringify(tiles1) === JSON.stringify([75, 6, 22]), [75, 6, 22], tiles1);
+
+const ast2 = T.parseSolverExpr("75 + (100 ÷ 4)");
+const tiles2 = T.tilesInComputeOrder(ast2);
+check("tiles in compute order — nested paren after lone tile (the critical case)",
+  JSON.stringify(tiles2) === JSON.stringify([100, 4, 75]), [100, 4, 75], tiles2);
+
+const ast3 = T.parseSolverExpr("(75 × 6) + (22 + 5)");
+const tiles3 = T.tilesInComputeOrder(ast3);
+check("tiles in compute order — two paren groups at root",
+  JSON.stringify(tiles3) === JSON.stringify([75, 6, 22, 5]), [75, 6, 22, 5], tiles3);
+
+const ast4 = T.parseSolverExpr("100 + 8");
+const tiles4 = T.tilesInComputeOrder(ast4);
+check("tiles in compute order — flat 2-tile solution",
+  JSON.stringify(tiles4) === JSON.stringify([100, 8]), [100, 8], tiles4);
+
+const steps1 = T.stepsInComputeOrder(ast1);
+check("steps in compute order — basic 3-tile solution",
+  JSON.stringify(steps1) === JSON.stringify(["75 × 6 = 450", "450 + 22 = 472"]),
+  ["75 × 6 = 450", "450 + 22 = 472"], steps1);
+
+const steps2 = T.stepsInComputeOrder(ast2);
+check("steps in compute order — running totals reflect inner-first evaluation",
+  JSON.stringify(steps2) === JSON.stringify(["100 ÷ 4 = 25", "75 + 25 = 100"]),
+  ["100 ÷ 4 = 25", "75 + 25 = 100"], steps2);
+
+console.log("\nhint helpers — level builder:");
+
+const SOL = "(75 × 6) + 22";
+const levels = T.buildHintLevels(SOL);
+check("3-tile solution produces exactly 7 hint levels (tiles + start-with + steps + full)",
+  levels.length === 7, 7, levels.length);
+check("level 1 reveals first tile with consistent phrasing",
+  levels[0] === "The tiles used in this order: 75.",
+  "The tiles used in this order: 75.", levels[0]);
+check("level 2 shows two tiles with the same phrasing",
+  levels[1] === "The tiles used in this order: 75, 6.",
+  "The tiles used in this order: 75, 6.", levels[1]);
+check("level 3 shows all tiles cumulatively with the same phrasing",
+  levels[2] === "The tiles used in this order: 75, 6, 22.",
+  "The tiles used in this order: 75, 6, 22.", levels[2]);
+check("level 4 reveals the first operation expression (no result)",
+  levels[3] === "Start with: 75 × 6.",
+  "Start with: 75 × 6.", levels[3]);
+check("level 5 reveals the first step with its result",
+  levels[4] === "75 × 6 = 450.",
+  "75 × 6 = 450.", levels[4]);
+check("level 6 reveals the running-total step",
+  levels[5] === "450 + 22 = 472.",
+  "450 + 22 = 472.", levels[5]);
+check("level 7 reveals the full expression with the answer",
+  levels[6] === "Full solution: (75 × 6) + 22 = 472.",
+  "Full solution: (75 × 6) + 22 = 472.", levels[6]);
+
+const levels4 = T.buildHintLevels("((75 × 6) + 22) − 7");
+check("4-tile solution produces 9 hint levels",
+  levels4.length === 9, 9, levels4.length);
+check("4-tile last level shows the full nested expression",
+  levels4[8] === "Full solution: ((75 × 6) + 22) − 7 = 465.",
+  "Full solution: ((75 × 6) + 22) − 7 = 465.", levels4[8]);
+
+const levels2 = T.buildHintLevels("100 + 8");
+check("2-tile solution produces 4 hint levels (no redundant 'full' level)",
+  levels2.length === 4, 4, levels2.length);
+check("2-tile last level is the step itself — same as the full expression",
+  levels2[3] === "100 + 8 = 108.",
+  "100 + 8 = 108.", levels2[3]);
+
+check("buildHintText delegates to the level list",
+  T.buildHintText(4, SOL) === "Start with: 75 × 6.",
+  "Start with: 75 × 6.", T.buildHintText(4, SOL));
+check("hintLevelsCount returns level count without recomputing text",
+  T.hintLevelsCount(SOL) === 7, 7, T.hintLevelsCount(SOL));
+check("hintLevelsCount on null solution returns 0",
+  T.hintLevelsCount(null) === 0, 0, T.hintLevelsCount(null));
 
 console.log("\n" + "─".repeat(48));
 console.log(`${pass} passed, ${fail} failed`);
