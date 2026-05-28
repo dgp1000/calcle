@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=48" />
+  <link rel="stylesheet" href="styles.css?v=49" />
   <script>
     // Set the theme attribute synchronously before the stylesheet kicks in,
     // so first paint is correct. Order of precedence:
@@ -137,9 +137,10 @@
         <div class="builder-hint sr-only" id="builderHint">Tap the tiles, ops, and parenthesis above.</div>
       </div>
 
-      <!-- 4. Hint row — progressive nudge for stuck players. Hidden when
-           the puzzle has no exact solution (nothing useful to reveal). -->
-      <div class="hint-row" id="hintRow">
+      <!-- 4. Hint row — progressive nudge for stuck players. Starts
+           hidden so it doesn't flash visible before JS runs; renderHint
+           reveals it once the round is running and an expression exists. -->
+      <div class="hint-row is-hidden" id="hintRow" hidden>
         <button id="hintBtn" class="hint-btn" type="button">Need a hint?</button>
         <div class="hint-display" id="hintDisplay" hidden></div>
       </div>
@@ -194,7 +195,7 @@
     </div>
   </div>
 
-  <script src="script.js?v=31"></script>
+  <script src="script.js?v=32"></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "81ef4e3318a44a1ba9fe61597e36bcfe"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

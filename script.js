@@ -793,9 +793,15 @@ function useHint() {
 
 function renderHint() {
   if (!hintRow || !hintBtn || !hintDisplay) return;
-  // Hide the entire row when there's no solution to nudge toward, or when
-  // the round isn't actively in progress.
-  const canShow = state && state.phase === "running" && !!state.solutionExpr;
+  // Hide the entire row whenever the hint button shouldn't be reachable:
+  //   - no exact solution exists
+  //   - round isn't actively running
+  //   - no expression has been built yet (a hint is for getting unstuck,
+  //     not for starting cold)
+  const hasExpression = !!(state && state.expression && state.expression.trim() !== "");
+  const canShow = state && state.phase === "running" && !!state.solutionExpr
+    && (hasExpression || (state.hintCount || 0) > 0);
+  hintRow.classList.toggle("is-hidden", !canShow);
   hintRow.hidden = !canShow;
   if (!canShow) return;
   const count = state.hintCount || 0;
@@ -812,7 +818,31 @@ function renderHint() {
     : `Another hint? (${count} used)`;
   hintBtn.disabled = count >= max;
   hintDisplay.hidden = false;
-  hintDisplay.textContent = buildHintText(count, state.solutionExpr);
+  hintDisplay.textContent = buildCumulativeHintDisplay(count, state.solutionExpr);
+}
+
+// Render every revealed hint so the solution visibly builds up on screen.
+// The tile-reveal lines (phase 1) are inherently cumulative — each level is
+// a longer list than the last — so we only show the latest. Anything from
+// the step-reveal phase onward stacks below it as a new line.
+function buildCumulativeHintDisplay(count, solutionExpr) {
+  if (count <= 0 || !solutionExpr) return "";
+  const levels = buildHintLevels(solutionExpr);
+  if (levels.length === 0) return "";
+  const ast = parseSolverExpr(solutionExpr);
+  const tileCount = ast ? tilesInComputeOrder(ast).length : 0;
+  const safeCount = Math.min(count, levels.length);
+  const lines = [];
+  // Latest tile-list line (collapses phase-1 entries 1..tileCount into one).
+  if (tileCount > 0) {
+    const tilesShown = Math.min(safeCount, tileCount);
+    if (tilesShown > 0) lines.push(levels[tilesShown - 1]);
+  }
+  // Each subsequent reveal (start-with, step traces, full solution) stacks.
+  for (let i = tileCount; i < safeCount; i++) {
+    lines.push(levels[i]);
+  }
+  return lines.join("\n");
 }
 
 // --- Tokenizer / parser ---

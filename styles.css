@@ -640,8 +640,11 @@ main {
 }
 /* Setting display: flex above overrides the UA stylesheet's
    [hidden] { display: none }, so we have to re-assert it. Without this
-   the hint button is visible in the idle phase before Start is pressed. */
-.hint-row[hidden] { display: none; }
+   the hint button is visible in the idle phase before Start is pressed.
+   Also accept a class-based hide for cases where a third-party rule
+   might out-specify [hidden]. */
+.hint-row[hidden],
+.hint-row.is-hidden { display: none; }
 .hint-btn {
   align-self: center;
   padding: 0.45rem 0.9rem;
@@ -663,7 +666,10 @@ main {
   font-size: 0.9rem;
   color: var(--accent);
   font-style: italic;
-  line-height: 1.35;
+  line-height: 1.4;
+  /* Cumulative reveal stacks multiple lines of hint text; pre-line
+     keeps the \n separators rendering as visual line breaks. */
+  white-space: pre-line;
 }
 
 /* Controls — Submit guess alone now (Clear + ⌫ live inside .results-box). */
