@@ -101,6 +101,19 @@ header {
   margin: 0 auto;
 }
 
+.puzzle-date {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+}
+
 .help-btn {
   position: absolute;
   top: 0;

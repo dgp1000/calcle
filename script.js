@@ -39,6 +39,14 @@ function todayKey() {
   return `${y}-${m}-${day}`;
 }
 
+// "2026-06-26" → "Fri 26 Jun" for the top-left date label.
+function formatPuzzleDate(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d)
+    .toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })
+    .replace(",", "");
+}
+
 function msUntilLocalMidnight() {
   const now = new Date();
   const next = new Date(now);
@@ -258,6 +266,7 @@ function yesterdayKey(todayK) {
 let rng = Math.random;
 
 // --- DOM ---
+const puzzleDateEl    = document.getElementById("puzzleDate");
 const targetEl        = document.getElementById("target");
 const currentEl       = document.getElementById("current");
 const timerBar        = document.getElementById("timerBar");
@@ -321,6 +330,7 @@ function newPuzzle({ devRandom = false } = {}) {
   if (countdownHandle) { clearInterval(countdownHandle); countdownHandle = null; }
 
   const today = todayKey();
+  if (puzzleDateEl) puzzleDateEl.textContent = formatPuzzleDate(today);
   rng = devRandom
     ? mulberry32(Math.floor(Math.random() * 0x7fffffff))
     : mulberry32(seedFromString(today));
