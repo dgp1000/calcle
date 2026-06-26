@@ -354,6 +354,7 @@ function newPuzzle({ devRandom = false } = {}) {
 
   state = {
     pool,
+    day: today, // the date this puzzle was generated for — used to auto-refresh across midnight
     expression: activeRound ? (activeRound.expression || "") : "",
     target,
     phase: alreadyPlayed ? "locked" : (activeRound ? "running" : "idle"),
@@ -1343,12 +1344,27 @@ document.addEventListener("touchend", e => {
 // Force a reflow on persisted pageshow so the gradient gets re-rasterised.
 window.addEventListener("pageshow", e => {
   if (!e.persisted) return;
+  maybeRefreshForNewDay(); // bfcache restore (e.g. mobile tab switch) → catch a day change
   const title = document.querySelector("header h1");
   if (!title) return;
   title.style.display = "none";
   void title.offsetHeight;
   title.style.display = "";
 });
+
+// A tab left open across midnight kept showing yesterday's puzzle (the only
+// midnight reload was on the locked/countdown screen). Regenerate whenever the
+// tab comes back and the calendar day has moved on — unless a round is actively
+// being played (don't yank the board mid-attempt).
+function maybeRefreshForNewDay() {
+  if (state && state.day && state.day !== todayKey() && state.phase !== "running") {
+    newPuzzle();
+  }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") maybeRefreshForNewDay();
+});
+window.addEventListener("focus", maybeRefreshForNewDay);
 
 
 newPuzzle();
